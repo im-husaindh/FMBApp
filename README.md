@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FMBRequestThali
 
-## Getting Started
+Meal/thali request and menu-management system. This is Phase 1 (foundation) —
+project scaffold, database schema, authentication, RBAC/RLS, and centralized
+settings/time helpers. No feature UI yet beyond a role-aware placeholder shell.
 
-First, run the development server:
+## Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js 20+
+- Docker Desktop (for local Supabase)
+- Supabase CLI (installed on demand via `npx supabase`)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Local development
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Copy the env template: `cp .env.example .env.local`
+2. Start local Supabase: `npx supabase start` — prints your local anon key and
+   service role key. Put the anon key in `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
+   the service role key in `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`.
+3. Apply migrations and seed data: `npx supabase db reset`
+4. Create dev accounts: `npm run seed:users` (prints the shared dev password —
+   development only, never used outside local dev)
+5. Install dependencies: `npm install`
+6. Run the app: `npm run dev` — visit http://localhost:3000/login
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Testing
 
-## Learn More
+- `npm run test` — unit tests (no live Supabase required)
+- RLS smoke test requires local Supabase running and seeded; see Task 16 in
+  `docs/superpowers/plans/2026-09-09-phase1-foundation.md` for the exact command.
 
-To learn more about Next.js, take a look at the following resources:
+## Project structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `docs/superpowers/specs/2026-09-09-phase1-foundation-design.md` for the
+architecture and database design, and the source requirements doc
+`FMBRequestThali Web App — Complete Development Prompt.md` for the full
+product spec across all phases.
