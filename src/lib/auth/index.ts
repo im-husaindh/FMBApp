@@ -23,7 +23,10 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
     .eq('id', user.id)
     .single();
 
-  if (!profile || !profile.active) return null;
+  if (!profile || !profile.active) {
+    await supabase.auth.signOut();
+    return null;
+  }
 
   return {
     id: profile.id,

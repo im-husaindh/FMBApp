@@ -24,7 +24,11 @@ describe('isBeforeCutoff', () => {
 
   it('is independent of the host machine timezone', () => {
     // No Date/Intl call in the implementation may read the host's local timezone.
-    const justBefore = new Date('2026-09-08T12:29:59.000Z');
-    expect(isBeforeCutoff('2026-09-09', 'America/New_York', '18:00', justBefore)).toBe(true);
+    // Pick an instant where Kolkata and New York genuinely disagree: Kolkata's
+    // cutoff (2026-09-08T12:30:00Z) has already passed, but New York's cutoff
+    // (EDT, 2026-09-08T22:00:00Z) has not.
+    const probe = new Date('2026-09-08T13:00:00.000Z');
+    expect(isBeforeCutoff('2026-09-09', 'Asia/Kolkata', '18:00', probe)).toBe(false);
+    expect(isBeforeCutoff('2026-09-09', 'America/New_York', '18:00', probe)).toBe(true);
   });
 });
