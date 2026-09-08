@@ -13,13 +13,13 @@ settings/time helpers. No feature UI yet beyond a role-aware placeholder shell.
 ## Local development
 
 1. Copy the env template: `cp .env.example .env.local`
-2. Start local Supabase: `npx supabase start` — prints your local anon key and
+2. Install dependencies: `npm install`
+3. Start local Supabase: `npx supabase start` — prints your local anon key and
    service role key. Put the anon key in `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
    the service role key in `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`.
-3. Apply migrations and seed data: `npx supabase db reset`
-4. Create dev accounts: `npm run seed:users` (prints the shared dev password —
+4. Apply migrations and seed data: `npx supabase db reset`
+5. Create dev accounts: `npm run seed:users` (prints the shared dev password —
    development only, never used outside local dev)
-5. Install dependencies: `npm install`
 6. Run the app: `npm run dev` — visit http://localhost:3000/login
 
 ## Testing
