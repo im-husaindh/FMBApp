@@ -25,7 +25,10 @@ settings/time helpers. No feature UI yet beyond a role-aware placeholder shell.
 7. Create sample thali requests: `npm run seed:thali` (varied requested/no-thali/no-response
    states across the same 11 service dates, for testing the dashboard and, later, admin
    operational views)
-8. Run the app: `npm run dev` — visit http://localhost:3000/login
+8. Create sample leave/holidays: `npm run seed:leave` (a few leave periods across
+   seeded users and one upcoming service holiday, for testing the admin dashboard's
+   counts and the dashboard's leave/no-service states)
+9. Run the app: `npm run dev` — visit http://localhost:3000/login
 
 ## Testing
 
