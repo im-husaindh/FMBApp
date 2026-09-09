@@ -42,8 +42,12 @@ export function ThaliRequestCard({
   action: (formData: FormData) => void;
 }) {
   const [step, setStep] = useState<Step>(existingRequest ? 'view' : 'choice');
-  const [gravyPortionId, setGravyPortionId] = useState(existingRequest?.gravyPortionId ?? '');
-  const [ricePortionId, setRicePortionId] = useState(existingRequest?.ricePortionId ?? '');
+  const [gravyPortionId, setGravyPortionId] = useState(
+    gravyOptions.some((o) => o.id === existingRequest?.gravyPortionId) ? existingRequest!.gravyPortionId! : ''
+  );
+  const [ricePortionId, setRicePortionId] = useState(
+    riceOptions.some((o) => o.id === existingRequest?.ricePortionId) ? existingRequest!.ricePortionId! : ''
+  );
   const [rotiQuantity, setRotiQuantity] = useState(existingRequest?.rotiQuantity ?? rotiMin);
 
   if (cutoffPassed) {

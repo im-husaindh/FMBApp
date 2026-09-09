@@ -29,6 +29,10 @@ export default async function DashboardPage({
     SETTINGS_KEYS.ROTI_MAX_QTY,
   ]);
   const cutoffTime = (settings[SETTINGS_KEYS.CUTOFF_TIME] as string) ?? '18:00';
+  const cutoffTimeDisplay = new Date(`1970-01-01T${cutoffTime}`).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
   const timezone = (settings[SETTINGS_KEYS.TIMEZONE] as string) ?? 'Asia/Kolkata';
   const rotiMin = (settings[SETTINGS_KEYS.ROTI_MIN_QTY] as number) ?? 0;
   const rotiMax = (settings[SETTINGS_KEYS.ROTI_MAX_QTY] as number) ?? 6;
@@ -144,7 +148,7 @@ export default async function DashboardPage({
           riceOptions={riceOptions ?? []}
           rotiMin={rotiMin}
           rotiMax={rotiMax}
-          cutoffTime={cutoffTime}
+          cutoffTime={cutoffTimeDisplay}
           action={submitThaliRequestAction}
         />
       </div>
