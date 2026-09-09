@@ -12,7 +12,7 @@ export async function createMenuAction(formData: FormData) {
   const parsed = menuVersionCreateSchema.safeParse({
     serviceDate: formData.get('serviceDate'),
     title: formData.get('title'),
-    notes: formData.get('notes'),
+    notes: formData.get('notes') ?? '',
     items: itemsRaw ? JSON.parse(itemsRaw as string) : [],
   });
 
@@ -23,11 +23,15 @@ export async function createMenuAction(formData: FormData) {
   const supabase = await createServerSupabaseClient();
 
   let menuId: string;
-  const { data: existingMenu } = await supabase
+  const { data: existingMenu, error: existingMenuError } = await supabase
     .from('menus')
     .select('id')
     .eq('service_date', parsed.data.serviceDate)
     .single();
+
+  if (existingMenuError) {
+    redirect('/admin/menu/new?error=save_failed');
+  }
 
   if (existingMenu) {
     menuId = existingMenu.id;
@@ -43,12 +47,15 @@ export async function createMenuAction(formData: FormData) {
     menuId = newMenu!.id;
   }
 
-  const { data: existingVersions } = await supabase
+  const { data: existingVersions, error: existingVersionsError } = await supabase
     .from('menu_versions')
     .select('version_number')
     .eq('menu_id', menuId)
     .order('version_number', { ascending: false })
     .limit(1);
+  if (existingVersionsError) {
+    redirect('/admin/menu/new?error=save_failed');
+  }
   const nextVersionNumber = (existingVersions?.[0]?.version_number ?? 0) + 1;
 
   const { data: version, error: versionError } = await supabase
