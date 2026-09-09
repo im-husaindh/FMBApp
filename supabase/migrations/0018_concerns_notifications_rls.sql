@@ -22,6 +22,8 @@ create policy notifications_select_own on public.notifications
 create policy notifications_update_own on public.notifications
   for update using (recipient_id = auth.uid()) with check (recipient_id = auth.uid());
 
--- Deliberately no insert policy on notifications for any client role — rows
--- are written only by lib/notifications' notify() helper, which runs with
--- the server's privileged Supabase client, never reachable from the browser.
+-- Notifications are inserted only by admin actions calling notify() (see
+-- migration 0019's notifications_insert_admin policy) — there is no
+-- privileged service-role client anywhere in this app's runtime code,
+-- only in offline scripts/tests, so the insert path must go through this
+-- ordinary admin-scoped RLS policy instead.

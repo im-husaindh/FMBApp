@@ -99,4 +99,59 @@ describe.skipIf(skip)('Concerns, concern_updates, and notifications RLS', () => 
       .select('id');
     expect(updateResult).toHaveLength(0);
   });
+
+  it('an admin can insert into notifications via an ordinary anon-key client', async () => {
+    const serviceClient = createClient(url!, serviceKey!);
+    const { data: recipient } = await serviceClient.from('profiles').select('id').eq('user_code', 'US001').single();
+
+    const adminClient = createClient(url!, anonKey!);
+    await adminClient.auth.signInWithPassword({ email: 'admin1@fmb.test', password: 'DevPass123!' });
+
+    const { error } = await adminClient
+      .from('notifications')
+      .insert({ recipient_id: recipient!.id, type: 'concern_response', payload: {} });
+    expect(error).toBeNull();
+  });
+
+  it('a regular user cannot insert into notifications', async () => {
+    const serviceClient = createClient(url!, serviceKey!);
+    const { data: recipient } = await serviceClient.from('profiles').select('id').eq('user_code', 'US002').single();
+
+    const userClient = createClient(url!, anonKey!);
+    await userClient.auth.signInWithPassword({ email: 'user1@fmb.test', password: 'DevPass123!' });
+
+    const { error } = await userClient
+      .from('notifications')
+      .insert({ recipient_id: recipient!.id, type: 'concern_response', payload: {} });
+    expect(error).not.toBeNull();
+  });
+
+  it('a regular user cannot update their own concern\'s status, but an admin can', async () => {
+    const ownerClient = createClient(url!, anonKey!);
+    await ownerClient.auth.signInWithPassword({ email: 'user1@fmb.test', password: 'DevPass123!' });
+    const ownerId = (await ownerClient.auth.getUser()).data.user!.id;
+
+    const { data: concern } = await ownerClient
+      .from('concerns')
+      .insert({ user_id: ownerId, concern_date: '2026-09-10', category: 'other', message: 'RLS test concern 4' })
+      .select('id')
+      .single();
+
+    const { data: ownUpdateResult } = await ownerClient
+      .from('concerns')
+      .update({ status: 'reviewing' })
+      .eq('id', concern!.id)
+      .select('id');
+    expect(ownUpdateResult).toHaveLength(0);
+
+    const adminClient = createClient(url!, anonKey!);
+    await adminClient.auth.signInWithPassword({ email: 'admin1@fmb.test', password: 'DevPass123!' });
+
+    const { data: adminUpdateResult } = await adminClient
+      .from('concerns')
+      .update({ status: 'reviewing' })
+      .eq('id', concern!.id)
+      .select('id');
+    expect(adminUpdateResult).toHaveLength(1);
+  });
 });
