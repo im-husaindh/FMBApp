@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed:users": "tsx scripts/seed-users.ts"
+    "seed:users": "tsx scripts/seed-users.ts",
+    "seed:menus": "tsx scripts/seed-menus.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
