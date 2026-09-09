@@ -22,7 +22,10 @@ settings/time helpers. No feature UI yet beyond a role-aware placeholder shell.
    development only, never used outside local dev)
 6. Create sample menus: `npm run seed:menus` (11 service dates: past 3 days, today, next 7 days —
    including one pending approval and one rejected, for testing the approval queue)
-7. Run the app: `npm run dev` — visit http://localhost:3000/login
+7. Create sample thali requests: `npm run seed:thali` (varied requested/no-thali/no-response
+   states across the same 11 service dates, for testing the dashboard and, later, admin
+   operational views)
+8. Run the app: `npm run dev` — visit http://localhost:3000/login
 
 ## Testing
 

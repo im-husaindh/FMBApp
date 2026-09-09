@@ -39,16 +39,14 @@ async function seed() {
       const bucket = (index + offset) % 5;
       if (bucket === 4) continue; // no response — no row for this user/date
       const wantsThali = bucket !== 3;
-      const row = wantsThali
-        ? {
-            user_id: user.id,
-            service_date: serviceDate,
-            wants_thali: true,
-            gravy_portion_id: gravyOptions[index % gravyOptions.length].id,
-            rice_portion_id: riceOptions[index % riceOptions.length].id,
-            roti_quantity: 2 + (index % 3),
-          }
-        : { user_id: user.id, service_date: serviceDate, wants_thali: false };
+      const row = {
+        user_id: user.id,
+        service_date: serviceDate,
+        wants_thali: wantsThali,
+        gravy_portion_id: wantsThali ? gravyOptions[index % gravyOptions.length].id : null,
+        rice_portion_id: wantsThali ? riceOptions[index % riceOptions.length].id : null,
+        roti_quantity: wantsThali ? 2 + (index % 3) : null,
+      };
       await supabase.from('thali_requests').upsert(row, { onConflict: 'user_id,service_date' });
       count++;
     }
