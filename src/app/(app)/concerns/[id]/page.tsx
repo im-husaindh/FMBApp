@@ -21,16 +21,16 @@ export default async function ConcernDetailPage({ params }: { params: Promise<{ 
     redirect('/concerns?error=not_found');
   }
 
-  const { data: updates } = await supabase
+  const { data: updates, error: updatesError } = await supabase
     .from('concern_updates')
     .select('id, new_status, message, changed_by, created_at')
     .eq('concern_id', id)
     .order('created_at', { ascending: true });
 
   const changedByIds = [...new Set((updates ?? []).map((u) => u.changed_by))];
-  const { data: admins } = changedByIds.length
+  const { data: admins, error: adminsError } = changedByIds.length
     ? await supabase.from('profiles').select('id, full_name').in('id', changedByIds)
-    : { data: [] as { id: string; full_name: string }[] };
+    : { data: [] as { id: string; full_name: string }[], error: null };
   const nameById = new Map((admins ?? []).map((a) => [a.id, a.full_name]));
 
   const categoryLabel = CONCERN_CATEGORIES.find((c) => c.value === concern.category)?.label ?? concern.category;
@@ -49,6 +49,17 @@ export default async function ConcernDetailPage({ params }: { params: Promise<{ 
         {categoryLabel} — {concern.concern_date}
       </p>
       <p className="mt-4 text-lg">{concern.message}</p>
+
+      {updatesError && (
+        <div className="mt-4 bg-red-50 px-4 py-3 text-lg text-red-700 rounded-lg">
+          Failed to load updates. Please try again later.
+        </div>
+      )}
+      {adminsError && (
+        <div className="mt-4 bg-red-50 px-4 py-3 text-lg text-red-700 rounded-lg">
+          Failed to load administrator information. Some names may not display correctly.
+        </div>
+      )}
 
       <h2 className="mt-8 text-xl font-bold">Updates</h2>
       {(updates ?? []).length === 0 && (
