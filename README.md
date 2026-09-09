@@ -20,7 +20,9 @@ settings/time helpers. No feature UI yet beyond a role-aware placeholder shell.
 4. Apply migrations and seed data: `npx supabase db reset`
 5. Create dev accounts: `npm run seed:users` (prints the shared dev password —
    development only, never used outside local dev)
-6. Run the app: `npm run dev` — visit http://localhost:3000/login
+6. Create sample menus: `npm run seed:menus` (11 service dates: past 3 days, today, next 7 days —
+   including one pending approval and one rejected, for testing the approval queue)
+7. Run the app: `npm run dev` — visit http://localhost:3000/login
 
 ## Testing
 
