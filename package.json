@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed:users": "tsx scripts/seed-users.ts",
-    "seed:menus": "tsx scripts/seed-menus.ts"
+    "seed:menus": "tsx scripts/seed-menus.ts",
+    "seed:thali": "tsx scripts/seed-thali-requests.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
