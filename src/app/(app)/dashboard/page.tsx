@@ -103,12 +103,25 @@ export default async function DashboardPage({
     };
   }
 
+  const { data: leaveRows } = await supabase
+    .from('user_leaves')
+    .select('reason')
+    .eq('user_id', profile.id)
+    .lte('from_date', tomorrow)
+    .gte('to_date', tomorrow);
+  const { data: holidayRows } = await supabase.from('service_holidays').select('reason').eq('service_date', tomorrow);
+
+  const onLeave = (leaveRows?.length ?? 0) > 0;
+  const isHoliday = (holidayRows?.length ?? 0) > 0;
+
   const errorMessage =
     errorParam === 'cutoff_passed'
       ? 'Selection time has closed. Your previous saved selection has been kept.'
       : errorParam === 'invalid'
         ? 'Your selection was not saved. Please try again.'
-        : null;
+        : errorParam === 'unavailable'
+          ? "You're on leave or thali service is unavailable for this date."
+          : null;
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
@@ -138,19 +151,31 @@ export default async function DashboardPage({
       )}
 
       <div className="mt-4">
-        <ThaliRequestCard
-          key={existingRequest?.updatedAt ?? 'none'}
-          serviceDate={tomorrow}
-          serviceDateLabel="tomorrow"
-          cutoffPassed={cutoffPassed}
-          existingRequest={existingRequest}
-          gravyOptions={gravyOptions ?? []}
-          riceOptions={riceOptions ?? []}
-          rotiMin={rotiMin}
-          rotiMax={rotiMax}
-          cutoffTime={cutoffTimeDisplay}
-          action={submitThaliRequestAction}
-        />
+        {isHoliday ? (
+          <div className="rounded-xl border border-gray-200 p-6">
+            <p className="text-xl font-semibold">No Thali Service Tomorrow</p>
+            {holidayRows![0].reason && <p className="mt-2 text-lg text-gray-600">{holidayRows![0].reason}</p>}
+          </div>
+        ) : onLeave ? (
+          <div className="rounded-xl border border-gray-200 p-6">
+            <p className="text-xl font-semibold">You&apos;re on Leave Tomorrow</p>
+            {leaveRows![0].reason && <p className="mt-2 text-lg text-gray-600">{leaveRows![0].reason}</p>}
+          </div>
+        ) : (
+          <ThaliRequestCard
+            key={existingRequest?.updatedAt ?? 'none'}
+            serviceDate={tomorrow}
+            serviceDateLabel="tomorrow"
+            cutoffPassed={cutoffPassed}
+            existingRequest={existingRequest}
+            gravyOptions={gravyOptions ?? []}
+            riceOptions={riceOptions ?? []}
+            rotiMin={rotiMin}
+            rotiMax={rotiMax}
+            cutoffTime={cutoffTimeDisplay}
+            action={submitThaliRequestAction}
+          />
+        )}
       </div>
 
       <MenuCalendar days={calendarDays} todayDate={today} tomorrowDate={tomorrow} />
