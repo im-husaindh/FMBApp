@@ -1,3 +1,5 @@
+import { classifyRequestStatus } from './request-status';
+
 export type ThaliRequestRow = {
   userId: string;
   wantsThali: boolean;
@@ -20,13 +22,6 @@ export type DailySummary = {
   totalRotis: number;
 };
 
-/**
- * A leave day takes precedence over any thali_requests row for that user/date —
- * checked first below — because the RLS/action enforcement (Task 3) only blocks
- * NEW writes; a leave added after a user already submitted a request does not
- * retroactively delete that row, so this function must not trust the row's
- * presence blindly.
- */
 export function computeDailySummary(
   activeUserIds: string[],
   requests: ThaliRequestRow[],
@@ -48,19 +43,24 @@ export function computeDailySummary(
   let totalRotis = 0;
 
   for (const userId of activeUserIds) {
-    if (onLeaveSet.has(userId)) {
+    const request = requestsByUser.get(userId);
+    const status = classifyRequestStatus(onLeaveSet.has(userId), request);
+
+    if (status === 'on_leave') {
       onLeaveCount++;
       continue;
     }
-    const request = requestsByUser.get(userId);
-    if (!request) {
+    if (status === 'no_response') {
       noResponseCount++;
       continue;
     }
-    if (!request.wantsThali) {
+    if (status === 'no_thali') {
       noThaliCount++;
       continue;
     }
+
+    // status === 'thali' — classifyRequestStatus only returns 'thali' when request is defined.
+    if (!request) continue;
     thaliCount++;
     if (request.gravyPortionId) {
       gravyCounts.set(request.gravyPortionId, (gravyCounts.get(request.gravyPortionId) ?? 0) + 1);
