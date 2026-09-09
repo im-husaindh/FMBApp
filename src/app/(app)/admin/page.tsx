@@ -49,6 +49,12 @@ export default async function AdminPage() {
           <Link href="/admin/leave" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
             Manage Leave
           </Link>
+          <Link href="/admin/requests" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
+            Detailed Requests
+          </Link>
+          <Link href="/admin/users/search" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
+            Search Users
+          </Link>
         </div>
       </main>
     );
@@ -171,6 +177,12 @@ export default async function AdminPage() {
         </Link>
         <Link href="/admin/leave" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
           Manage Leave
+        </Link>
+        <Link href="/admin/requests" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
+          Detailed Requests
+        </Link>
+        <Link href="/admin/users/search" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
+          Search Users
         </Link>
       </div>
     </main>
