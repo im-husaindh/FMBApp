@@ -29,7 +29,7 @@ async function seed() {
     throw new Error('Run `npm run seed:users` first — admin/super_admin/US004-US006 profiles not found.');
   }
 
-  const leaveRows: any[] = [
+  const leaveRows: { user_id: string; from_date: string; to_date: string; reason: string | null; entered_by: string }[] = [
     {
       user_id: users.find((u) => u.user_code === 'US004')!.id,
       from_date: dateOffset(2),
@@ -48,6 +48,7 @@ async function seed() {
       user_id: users.find((u) => u.user_code === 'US006')!.id,
       from_date: dateOffset(6),
       to_date: dateOffset(9),
+      reason: null,
       entered_by: admin.id,
     },
   ];
