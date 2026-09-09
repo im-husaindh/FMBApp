@@ -33,7 +33,11 @@ export async function updateMenuVersionAction(formData: FormData) {
     redirect(`/admin/menu/${menuId}?error=save_failed`);
   }
 
-  await supabase.from('menu_items').delete().eq('menu_version_id', versionId);
+  const { error: deleteError } = await supabase.from('menu_items').delete().eq('menu_version_id', versionId);
+  if (deleteError) {
+    redirect(`/admin/menu/${menuId}?error=save_failed`);
+  }
+
   const itemRows = parsed.data.items.map((item, index) => ({
     menu_version_id: versionId,
     item_name: item.itemName,
