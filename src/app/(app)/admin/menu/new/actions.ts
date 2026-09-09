@@ -86,7 +86,7 @@ export async function createMenuAction(formData: FormData) {
     item_name: item.itemName,
     category: item.category,
     description: item.description || null,
-    display_order: item.displayOrder ?? index,
+    display_order: index,
   }));
 
   const { error: itemsError } = await supabase.from('menu_items').insert(itemRows);

@@ -216,6 +216,8 @@ web3 = 30
 # secret = ""
 
 [auth.email]
+# NOTE: in this Supabase CLI version, enable_signup/enable_signin below gate ALL email/password
+# sign-in (not just self-registration) — do not set either back to false or local dev auth breaks.
 # Allow/disallow new user signups via email to your project.
 enable_signup = true
 # Allow/disallow user sign-ins via email.

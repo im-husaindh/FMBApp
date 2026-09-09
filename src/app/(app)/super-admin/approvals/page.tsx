@@ -9,8 +9,13 @@ type PendingVersionRow = {
   menu_items: { item_name: string; category: string; description: string | null; display_order: number }[];
 };
 
-export default async function ApprovalsPage() {
+export default async function ApprovalsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   await requireRole(['super_admin']);
+  const { error: actionError } = await searchParams;
   const supabase = await createServerSupabaseClient();
 
   const { data: pendingVersions, error } = await supabase
@@ -59,6 +64,11 @@ export default async function ApprovalsPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="text-3xl font-bold">Menu Approvals</h1>
+      {actionError && (
+        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+          This menu could not be updated. It may have already been reviewed — refresh and try again.
+        </p>
+      )}
       {rows.length === 0 && <p className="mt-4 text-lg text-gray-600">No pending menu approvals.</p>}
       <div className="mt-6 space-y-6">
         {rows.map(({ version, diff }) => (

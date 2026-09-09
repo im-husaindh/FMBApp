@@ -56,17 +56,38 @@ async function createApprovedMenu(serviceDate: string, adminId: string, superAdm
   );
 
   await supabase.from('menus').update({ current_approved_version_id: version.id }).eq('id', menu.id);
+  return menu.id;
 }
 
-async function createPendingMenu(serviceDate: string, adminId: string) {
-  const { data: menu } = await supabase.from('menus').insert({ service_date: serviceDate }).select('id').single();
-  if (!menu) return;
+// If `existingMenuId` is given, adds a pending version on top of that menu's existing
+// versions (e.g. a v2 pending review while v1 is still the approved/live version) instead
+// of creating a brand-new menu. This is what exercises the "supersede the old approved
+// version" branch of the approve_menu_version RPC.
+async function createPendingMenu(serviceDate: string, adminId: string, existingMenuId?: string) {
+  let menuId: string;
+  let nextVersionNumber = 1;
+
+  if (existingMenuId) {
+    menuId = existingMenuId;
+    const { data: latestVersion } = await supabase
+      .from('menu_versions')
+      .select('version_number')
+      .eq('menu_id', menuId)
+      .order('version_number', { ascending: false })
+      .limit(1)
+      .single();
+    nextVersionNumber = (latestVersion?.version_number ?? 0) + 1;
+  } else {
+    const { data: menu } = await supabase.from('menus').insert({ service_date: serviceDate }).select('id').single();
+    if (!menu) return;
+    menuId = menu.id;
+  }
 
   const { data: version } = await supabase
     .from('menu_versions')
     .insert({
-      menu_id: menu.id,
-      version_number: 1,
+      menu_id: menuId,
+      version_number: nextVersionNumber,
       status: 'pending_approval',
       created_by: adminId,
       submitted_by: adminId,
@@ -129,9 +150,17 @@ async function seed() {
   for (let offset = -3; offset <= 7; offset++) {
     const serviceDate = dateOffset(offset);
     if (offset === 4) {
-      await createPendingMenu(serviceDate, admin.id);
+      // Approved v1, then a separate pending v2 on top of it — exercises the RPC's
+      // "old approved version becomes superseded" branch when v2 is approved.
+      const menuId = await createApprovedMenu(serviceDate, admin.id, superAdmin.id);
+      if (menuId) await createPendingMenu(serviceDate, admin.id, menuId);
     } else if (offset === 5) {
       await createRejectedMenu(serviceDate, admin.id, superAdmin.id);
+    } else if (offset === 6) {
+      // Independent pending-only menu, with no approved version — a separate pending
+      // scenario so tests that reject a pending version don't fight over the same row
+      // the "approve" test consumes.
+      await createPendingMenu(serviceDate, admin.id);
     } else {
       await createApprovedMenu(serviceDate, admin.id, superAdmin.id);
     }

@@ -13,7 +13,7 @@ export async function approveAction(formData: FormData) {
   const { error } = await supabase.rpc('approve_menu_version', { p_version_id: versionId });
 
   if (error) {
-    redirect(`/super-admin/approvals?error=${encodeURIComponent(error.message)}`);
+    redirect('/super-admin/approvals?error=action_failed');
   }
 
   redirect('/super-admin/approvals');
@@ -38,7 +38,7 @@ export async function rejectAction(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/super-admin/approvals?error=${encodeURIComponent(error.message)}`);
+    redirect('/super-admin/approvals?error=action_failed');
   }
 
   redirect('/super-admin/approvals');

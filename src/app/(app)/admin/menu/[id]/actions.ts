@@ -43,7 +43,7 @@ export async function updateMenuVersionAction(formData: FormData) {
     item_name: item.itemName,
     category: item.category,
     description: item.description || null,
-    display_order: item.displayOrder ?? index,
+    display_order: index,
   }));
   const { error: itemsError } = await supabase.from('menu_items').insert(itemRows);
   if (itemsError) {
@@ -59,6 +59,21 @@ export async function submitForApprovalAction(formData: FormData) {
   const menuId = formData.get('menuId') as string;
 
   const supabase = await createServerSupabaseClient();
+
+  const { data: existingItems, error: itemsCheckError } = await supabase
+    .from('menu_items')
+    .select('id')
+    .eq('menu_version_id', versionId)
+    .limit(1);
+
+  if (itemsCheckError) {
+    redirect(`/admin/menu/${menuId}?error=submit_failed`);
+  }
+
+  if (!existingItems || existingItems.length === 0) {
+    redirect(`/admin/menu/${menuId}?error=no_items`);
+  }
+
   const { error } = await supabase
     .from('menu_versions')
     .update({
@@ -89,15 +104,54 @@ export async function createNewVersionAction(formData: FormData) {
     .limit(1);
   const nextVersionNumber = (existingVersions?.[0]?.version_number ?? 0) + 1;
 
-  const { error } = await supabase.from('menu_versions').insert({
-    menu_id: menuId,
-    version_number: nextVersionNumber,
-    status: 'draft',
-    created_by: profile.id,
-  });
+  const { data: menu, error: menuError } = await supabase
+    .from('menus')
+    .select('current_approved_version_id')
+    .eq('id', menuId)
+    .single();
 
-  if (error) {
+  if (menuError) {
     redirect(`/admin/menu/${menuId}?error=already_active`);
+  }
+
+  const { data: newVersion, error } = await supabase
+    .from('menu_versions')
+    .insert({
+      menu_id: menuId,
+      version_number: nextVersionNumber,
+      status: 'draft',
+      created_by: profile.id,
+    })
+    .select('id')
+    .single();
+
+  if (error || !newVersion) {
+    redirect(`/admin/menu/${menuId}?error=already_active`);
+  }
+
+  if (menu?.current_approved_version_id) {
+    const { data: approvedItems, error: approvedItemsError } = await supabase
+      .from('menu_items')
+      .select('item_name, category, description, display_order')
+      .eq('menu_version_id', menu.current_approved_version_id);
+
+    if (approvedItemsError) {
+      redirect(`/admin/menu/${menuId}?error=already_active`);
+    }
+
+    if (approvedItems && approvedItems.length > 0) {
+      const itemRows = approvedItems.map((item) => ({
+        menu_version_id: newVersion!.id,
+        item_name: item.item_name,
+        category: item.category,
+        description: item.description,
+        display_order: item.display_order,
+      }));
+      const { error: copyItemsError } = await supabase.from('menu_items').insert(itemRows);
+      if (copyItemsError) {
+        redirect(`/admin/menu/${menuId}?error=already_active`);
+      }
+    }
   }
 
   redirect(`/admin/menu/${menuId}`);
