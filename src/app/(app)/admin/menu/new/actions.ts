@@ -27,7 +27,7 @@ export async function createMenuAction(formData: FormData) {
     .from('menus')
     .select('id')
     .eq('service_date', parsed.data.serviceDate)
-    .single();
+    .maybeSingle();
 
   if (existingMenuError) {
     redirect('/admin/menu/new?error=save_failed');
