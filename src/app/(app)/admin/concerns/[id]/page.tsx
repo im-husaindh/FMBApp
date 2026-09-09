@@ -28,22 +28,22 @@ export default async function AdminConcernDetailPage({
     redirect('/admin/concerns?error=not_found');
   }
 
-  const { data: user } = await supabase
+  const { data: user, error: userError } = await supabase
     .from('profiles')
     .select('full_name, user_code')
     .eq('id', concern.user_id)
     .maybeSingle();
 
-  const { data: updates } = await supabase
+  const { data: updates, error: updatesError } = await supabase
     .from('concern_updates')
     .select('id, new_status, message, changed_by, created_at')
     .eq('concern_id', id)
     .order('created_at', { ascending: true });
 
   const changedByIds = [...new Set((updates ?? []).map((u) => u.changed_by))];
-  const { data: admins } = changedByIds.length
+  const { data: admins, error: adminsError } = changedByIds.length
     ? await supabase.from('profiles').select('id, full_name').in('id', changedByIds)
-    : { data: [] as { id: string; full_name: string }[] };
+    : { data: [] as { id: string; full_name: string }[], error: null };
   const nameById = new Map((admins ?? []).map((a) => [a.id, a.full_name]));
 
   const categoryLabel = CONCERN_CATEGORIES.find((c) => c.value === concern.category)?.label ?? concern.category;
@@ -64,9 +64,15 @@ export default async function AdminConcernDetailPage({
         <h1 className="text-3xl font-bold">Concern #{concern.concern_number}</h1>
         <ConcernStatusBadge status={concern.status} />
       </div>
-      <p className="mt-2 text-lg text-gray-600">
-        {user?.full_name} ({user?.user_code}) — {categoryLabel} — {concern.concern_date}
-      </p>
+      {userError ? (
+        <p className="mt-2 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+          Could not load member details.
+        </p>
+      ) : (
+        <p className="mt-2 text-lg text-gray-600">
+          {user?.full_name} ({user?.user_code}) — {categoryLabel} — {concern.concern_date}
+        </p>
+      )}
       <p className="mt-4 text-lg">{concern.message}</p>
 
       {errorMessage && (
@@ -74,6 +80,11 @@ export default async function AdminConcernDetailPage({
       )}
 
       <h2 className="mt-8 text-xl font-bold">Updates</h2>
+      {(updatesError || adminsError) && (
+        <p className="mt-2 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+          Could not load the full update history. Please refresh and try again.
+        </p>
+      )}
       <div className="mt-2 space-y-3">
         {(updates ?? []).map((u) => (
           <div key={u.id} className="rounded-lg border border-gray-200 px-4 py-3 text-lg">
