@@ -8,7 +8,9 @@ export default async function AdminMenuListPage() {
 
   const { data: menus } = await supabase
     .from('menus')
-    .select('id, service_date, current_approved_version_id, menu_versions(id, status, version_number)')
+    .select(
+      'id, service_date, current_approved_version_id, menu_versions!menu_versions_menu_id_fkey(id, status, version_number)'
+    )
     .order('service_date', { ascending: false })
     .limit(30);
 
