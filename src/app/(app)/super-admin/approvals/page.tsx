@@ -7,13 +7,17 @@ export default async function ApprovalsPage() {
   await requireRole(['super_admin']);
   const supabase = await createServerSupabaseClient();
 
-  const { data: pendingVersions } = await supabase
+  const { data: pendingVersions, error } = await supabase
     .from('menu_versions')
     .select(
-      'id, menu_id, title, submitted_at, menus(service_date, current_approved_version_id), menu_items(item_name, category, description, display_order)'
+      'id, menu_id, title, submitted_at, menus!inner(service_date, current_approved_version_id), menu_items(item_name, category, description, display_order)'
     )
     .eq('status', 'pending_approval')
     .order('submitted_at', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching pending versions:', error);
+  }
 
   const rows = await Promise.all(
     (pendingVersions ?? []).map(async (version) => {
