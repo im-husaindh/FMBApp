@@ -75,4 +75,32 @@ describe.skipIf(skip)('Leave and service-holiday enforcement', () => {
     });
     expect(notOnLeave).toBe(false);
   });
+
+  it('an admin session can read another user\'s thali_requests row', async () => {
+    const userClient = createClient(url!, anonKey!);
+    await userClient.auth.signInWithPassword({ email: 'user1@fmb.test', password: 'DevPass123!' });
+    const userId = (await userClient.auth.getUser()).data.user!.id;
+
+    const future = new Date();
+    future.setDate(future.getDate() + 50);
+    const serviceDate = future.toISOString().slice(0, 10);
+
+    const { error: upsertError } = await userClient
+      .from('thali_requests')
+      .upsert({ user_id: userId, service_date: serviceDate, wants_thali: false }, { onConflict: 'user_id,service_date' });
+    expect(upsertError).toBeNull();
+
+    const adminAuthClient = createClient(url!, anonKey!);
+    await adminAuthClient.auth.signInWithPassword({ email: 'admin1@fmb.test', password: 'DevPass123!' });
+
+    const { data, error } = await adminAuthClient
+      .from('thali_requests')
+      .select('user_id, service_date, wants_thali')
+      .eq('user_id', userId)
+      .eq('service_date', serviceDate);
+
+    expect(error).toBeNull();
+    expect(data).toHaveLength(1);
+    expect(data![0].wants_thali).toBe(false);
+  });
 });

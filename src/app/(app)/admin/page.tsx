@@ -14,10 +14,26 @@ export default async function AdminPage() {
   const today = todayInTimezone(timezone);
   const tomorrow = addDays(today, 1);
 
-  const { data: holidayRows } = await supabase.from('service_holidays').select('reason').eq('service_date', tomorrow);
+  const errorState = (
+    <main className="mx-auto max-w-2xl px-4 py-10">
+      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+      <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+        Could not load tomorrow&apos;s summary. Please try again.
+      </p>
+    </main>
+  );
+
+  const { data: holidayRows, error: holidayError } = await supabase
+    .from('service_holidays')
+    .select('reason')
+    .eq('service_date', tomorrow);
+  if (holidayError) {
+    return errorState;
+  }
+  const isHoliday = (holidayRows?.length ?? 0) > 0;
   const holidayReason = holidayRows?.[0]?.reason ?? null;
 
-  if (holidayReason) {
+  if (isHoliday) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
@@ -26,23 +42,34 @@ export default async function AdminPage() {
           <p className="text-xl font-semibold">No Thali Service Tomorrow</p>
           <p className="mt-2 text-lg text-gray-600">{holidayReason}</p>
         </div>
-        <Link href="/admin/menu" className="mt-6 inline-block rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
-          Manage Menus
-        </Link>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/admin/menu" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
+            Manage Menus
+          </Link>
+          <Link href="/admin/leave" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
+            Manage Leave
+          </Link>
+        </div>
       </main>
     );
   }
 
-  const { data: activeUsers } = await supabase.from('profiles').select('id').eq('role', 'user').eq('active', true);
+  const { data: activeUsers, error: activeUsersError } = await supabase.from('profiles').select('id').eq('active', true);
+  if (activeUsersError) {
+    return errorState;
+  }
   const activeUserIds = (activeUsers ?? []).map((u) => u.id);
 
-  const { data: requestRows } = activeUserIds.length
+  const { data: requestRows, error: requestRowsError } = activeUserIds.length
     ? await supabase
         .from('thali_requests')
         .select('user_id, wants_thali, gravy_portion_id, rice_portion_id, roti_quantity')
         .eq('service_date', tomorrow)
         .in('user_id', activeUserIds)
-    : { data: [] as { user_id: string; wants_thali: boolean; gravy_portion_id: string | null; rice_portion_id: string | null; roti_quantity: number | null }[] };
+    : { data: [] as { user_id: string; wants_thali: boolean; gravy_portion_id: string | null; rice_portion_id: string | null; roti_quantity: number | null }[], error: null };
+  if (requestRowsError) {
+    return errorState;
+  }
 
   const requests: ThaliRequestRow[] = (requestRows ?? []).map((r) => ({
     userId: r.user_id,
@@ -52,28 +79,37 @@ export default async function AdminPage() {
     rotiQuantity: r.roti_quantity,
   }));
 
-  const { data: leaveRows } = activeUserIds.length
+  const { data: leaveRows, error: leaveRowsError } = activeUserIds.length
     ? await supabase
         .from('user_leaves')
         .select('user_id')
         .lte('from_date', tomorrow)
         .gte('to_date', tomorrow)
         .in('user_id', activeUserIds)
-    : { data: [] as { user_id: string }[] };
+    : { data: [] as { user_id: string }[], error: null };
+  if (leaveRowsError) {
+    return errorState;
+  }
   const onLeaveUserIds = (leaveRows ?? []).map((l) => l.user_id);
 
-  const { data: gravyOptions } = await supabase
+  const { data: gravyOptions, error: gravyOptionsError } = await supabase
     .from('portion_options')
     .select('id, label')
     .eq('category', 'gravy')
     .eq('active', true)
     .order('sort_order');
-  const { data: riceOptions } = await supabase
+  if (gravyOptionsError) {
+    return errorState;
+  }
+  const { data: riceOptions, error: riceOptionsError } = await supabase
     .from('portion_options')
     .select('id, label')
     .eq('category', 'rice')
     .eq('active', true)
     .order('sort_order');
+  if (riceOptionsError) {
+    return errorState;
+  }
 
   const summary = computeDailySummary(activeUserIds, requests, onLeaveUserIds, gravyOptions ?? [], riceOptions ?? []);
 
