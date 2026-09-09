@@ -128,10 +128,12 @@ export function ThaliRequestCard({
                 key={opt.id}
                 type="button"
                 onClick={() => setGravyPortionId(opt.id)}
-                className={`h-12 rounded-lg border px-4 text-lg ${
+                aria-pressed={gravyPortionId === opt.id}
+                className={`flex h-12 items-center gap-1.5 rounded-lg border px-4 text-lg ${
                   gravyPortionId === opt.id ? 'border-blue-600 bg-blue-50 font-semibold' : 'border-gray-300'
                 }`}
               >
+                {gravyPortionId === opt.id && <CheckCircle2 className="size-4" />}
                 {opt.label}
               </button>
             ))}
@@ -147,10 +149,12 @@ export function ThaliRequestCard({
                 key={opt.id}
                 type="button"
                 onClick={() => setRicePortionId(opt.id)}
-                className={`h-12 rounded-lg border px-4 text-lg ${
+                aria-pressed={ricePortionId === opt.id}
+                className={`flex h-12 items-center gap-1.5 rounded-lg border px-4 text-lg ${
                   ricePortionId === opt.id ? 'border-blue-600 bg-blue-50 font-semibold' : 'border-gray-300'
                 }`}
               >
+                {ricePortionId === opt.id && <CheckCircle2 className="size-4" />}
                 {opt.label}
               </button>
             ))}
