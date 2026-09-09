@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cutoffInstant, isBeforeCutoff, todayInTimezone, serviceDateRange } from './cutoff';
+import { cutoffInstant, isBeforeCutoff, todayInTimezone, serviceDateRange, addDays } from './cutoff';
 
 describe('cutoffInstant', () => {
   it('computes 6pm IST on the previous day as the correct UTC instant', () => {
@@ -52,5 +52,15 @@ describe('serviceDateRange', () => {
     expect(result[0]).toBe('2026-09-06');
     expect(result[3]).toBe('2026-09-09');
     expect(result[10]).toBe('2026-09-16');
+  });
+});
+
+describe('addDays', () => {
+  it('adds days across a month boundary', () => {
+    expect(addDays('2026-09-30', 1)).toBe('2026-10-01');
+  });
+
+  it('subtracts days with a negative value', () => {
+    expect(addDays('2026-09-01', -1)).toBe('2026-08-31');
   });
 });

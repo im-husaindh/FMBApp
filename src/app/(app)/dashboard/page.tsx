@@ -1,17 +1,10 @@
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSettings, SETTINGS_KEYS } from '@/lib/settings';
-import { isBeforeCutoff, todayInTimezone, serviceDateRange } from '@/lib/time/cutoff';
+import { isBeforeCutoff, todayInTimezone, serviceDateRange, addDays } from '@/lib/time/cutoff';
 import { submitThaliRequestAction, logoutAction } from './actions';
 import { ThaliRequestCard, type ExistingRequest } from '@/components/thali/thali-request-card';
 import { MenuCalendar, type CalendarDay } from '@/components/thali/menu-calendar';
-
-function addDays(dateStr: string, days: number): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  dt.setUTCDate(dt.getUTCDate() + days);
-  return dt.toISOString().slice(0, 10);
-}
 
 export default async function DashboardPage({
   searchParams,
