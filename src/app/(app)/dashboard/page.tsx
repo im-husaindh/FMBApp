@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSettings, SETTINGS_KEYS } from '@/lib/settings';
@@ -125,6 +126,12 @@ export default async function DashboardPage({
             Log Out
           </button>
         </form>
+      </div>
+
+      <div className="mt-3">
+        <Link href="/concerns" className="text-lg text-blue-600 underline">
+          Raise Food Concern
+        </Link>
       </div>
 
       {errorMessage && (
