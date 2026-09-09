@@ -28,7 +28,10 @@ settings/time helpers. No feature UI yet beyond a role-aware placeholder shell.
 8. Create sample leave/holidays: `npm run seed:leave` (a few leave periods across
    seeded users and one upcoming service holiday, for testing the admin dashboard's
    counts and the dashboard's leave/no-service states)
-9. Run the app: `npm run dev` — visit http://localhost:3000/login
+9. Create sample concerns: `npm run seed:concerns` (three concerns across
+   US001-US003 in open/reviewing/resolved states, with matching concern_updates
+   and a notification for the resolved one, for testing the concern workflow)
+10. Run the app: `npm run dev` — visit http://localhost:3000/login
 
 ## Testing
 

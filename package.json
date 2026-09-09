@@ -12,7 +12,8 @@
     "seed:users": "tsx scripts/seed-users.ts",
     "seed:menus": "tsx scripts/seed-menus.ts",
     "seed:thali": "tsx scripts/seed-thali-requests.ts",
-    "seed:leave": "tsx scripts/seed-leave-and-holidays.ts"
+    "seed:leave": "tsx scripts/seed-leave-and-holidays.ts",
+    "seed:concerns": "tsx scripts/seed-concerns.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
