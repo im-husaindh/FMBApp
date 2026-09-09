@@ -51,3 +51,32 @@ export function isBeforeCutoff(
 ): boolean {
   return nowUtc.getTime() < cutoffInstant(serviceDate, timeZone, cutoffTime).getTime();
 }
+
+/** Today's date (YYYY-MM-DD) as a wall-clock date in `timeZone`. */
+export function todayInTimezone(timeZone: string, nowUtc: Date = new Date()): string {
+  const dtf = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return dtf.format(nowUtc);
+}
+
+/** Inclusive YYYY-MM-DD range: `daysBefore` days before today through `daysAfter` days after, in `timeZone`. */
+export function serviceDateRange(
+  timeZone: string,
+  daysBefore: number,
+  daysAfter: number,
+  nowUtc: Date = new Date()
+): string[] {
+  const today = todayInTimezone(timeZone, nowUtc);
+  const [y, m, d] = today.split('-').map(Number);
+  const dates: string[] = [];
+  for (let offset = -daysBefore; offset <= daysAfter; offset++) {
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    dt.setUTCDate(dt.getUTCDate() + offset);
+    dates.push(dt.toISOString().slice(0, 10));
+  }
+  return dates;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cutoffInstant, isBeforeCutoff } from './cutoff';
+import { cutoffInstant, isBeforeCutoff, todayInTimezone, serviceDateRange } from './cutoff';
 
 describe('cutoffInstant', () => {
   it('computes 6pm IST on the previous day as the correct UTC instant', () => {
@@ -30,5 +30,27 @@ describe('isBeforeCutoff', () => {
     const probe = new Date('2026-09-08T13:00:00.000Z');
     expect(isBeforeCutoff('2026-09-09', 'Asia/Kolkata', '18:00', probe)).toBe(false);
     expect(isBeforeCutoff('2026-09-09', 'America/New_York', '18:00', probe)).toBe(true);
+  });
+});
+
+describe('todayInTimezone', () => {
+  it('returns the next calendar day in IST when UTC is still on the previous day', () => {
+    // 2026-09-09T20:00:00Z = 2026-09-10 01:30 IST
+    expect(todayInTimezone('Asia/Kolkata', new Date('2026-09-09T20:00:00Z'))).toBe('2026-09-10');
+  });
+
+  it('returns the same calendar day in IST for a UTC morning instant', () => {
+    // 2026-09-09T10:00:00Z = 2026-09-09 15:30 IST
+    expect(todayInTimezone('Asia/Kolkata', new Date('2026-09-09T10:00:00Z'))).toBe('2026-09-09');
+  });
+});
+
+describe('serviceDateRange', () => {
+  it('returns an inclusive range spanning daysBefore through daysAfter today', () => {
+    const result = serviceDateRange('Asia/Kolkata', 3, 7, new Date('2026-09-09T10:00:00Z'));
+    expect(result).toHaveLength(11);
+    expect(result[0]).toBe('2026-09-06');
+    expect(result[3]).toBe('2026-09-09');
+    expect(result[10]).toBe('2026-09-16');
   });
 });
