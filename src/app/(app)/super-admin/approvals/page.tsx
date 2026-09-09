@@ -3,6 +3,12 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { computeMenuDiff } from '@/lib/menu/diff';
 import { approveAction, rejectAction } from './actions';
 
+type PendingVersionRow = {
+  id: string;
+  menus: { service_date: string; current_approved_version_id: string | null } | null;
+  menu_items: { item_name: string; category: string; description: string | null; display_order: number }[];
+};
+
 export default async function ApprovalsPage() {
   await requireRole(['super_admin']);
   const supabase = await createServerSupabaseClient();
@@ -10,10 +16,11 @@ export default async function ApprovalsPage() {
   const { data: pendingVersions, error } = await supabase
     .from('menu_versions')
     .select(
-      'id, menu_id, title, submitted_at, menus!inner(service_date, current_approved_version_id), menu_items(item_name, category, description, display_order)'
+      'id, menu_id, title, submitted_at, menus!menu_versions_menu_id_fkey(service_date, current_approved_version_id), menu_items(item_name, category, description, display_order)'
     )
     .eq('status', 'pending_approval')
-    .order('submitted_at', { ascending: true });
+    .order('submitted_at', { ascending: true })
+    .overrideTypes<Array<PendingVersionRow>, { merge: false }>();
 
   if (error) {
     console.error('Error fetching pending versions:', error);
@@ -23,7 +30,7 @@ export default async function ApprovalsPage() {
     (pendingVersions ?? []).map(async (version) => {
       let oldItems: { item_name: string; category: string; description: string | null; display_order: number }[] =
         [];
-      const approvedVersionId = version.menus?.[0]?.current_approved_version_id;
+      const approvedVersionId = version.menus?.current_approved_version_id;
       if (approvedVersionId) {
         const { data: approved } = await supabase
           .from('menu_items')
@@ -56,7 +63,7 @@ export default async function ApprovalsPage() {
       <div className="mt-6 space-y-6">
         {rows.map(({ version, diff }) => (
           <div key={version.id} className="rounded-lg border border-gray-200 p-4">
-            <p className="text-xl font-semibold">{version.menus?.[0]?.service_date}</p>
+            <p className="text-xl font-semibold">{version.menus?.service_date}</p>
             {diff.map((d) => (
               <div key={d.category} className="mt-2">
                 {d.changed.map((c, i) => (
