@@ -37,16 +37,18 @@ export function MenuItemsEditor({
       {items.map((item, index) => (
         <div key={index} className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 p-3">
           <div className="min-w-[160px] flex-1">
-            <Label className="text-sm">Item name</Label>
+            <Label htmlFor={`item-name-${index}`} className="text-sm">Item name</Label>
             <Input
+              id={`item-name-${index}`}
               value={item.itemName}
               onChange={(e) => updateItem(index, 'itemName', e.target.value)}
               className="h-12"
             />
           </div>
           <div>
-            <Label className="text-sm">Category</Label>
+            <Label htmlFor={`item-category-${index}`} className="text-sm">Category</Label>
             <select
+              id={`item-category-${index}`}
               value={item.category}
               onChange={(e) => updateItem(index, 'category', e.target.value)}
               className="h-12 rounded-lg border border-gray-300 px-3"
