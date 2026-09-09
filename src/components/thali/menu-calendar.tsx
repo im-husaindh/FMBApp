@@ -17,7 +17,7 @@ export function MenuCalendar({
           const isToday = day.serviceDate === todayDate;
           const isTomorrow = day.serviceDate === tomorrowDate;
           const isPast = day.serviceDate < todayDate;
-          const label = isToday ? 'TODAY' : isTomorrow ? 'TOMORROW' : day.serviceDate;
+          const label = isToday ? 'TODAY' : isTomorrow ? 'TOMORROW' : isPast ? 'PAST' : day.serviceDate;
           return (
             <div
               key={day.serviceDate}

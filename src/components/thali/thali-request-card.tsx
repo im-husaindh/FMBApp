@@ -9,8 +9,11 @@ export type PortionOption = { id: string; label: string };
 export type ExistingRequest = {
   wantsThali: boolean;
   rotiQuantity: number | null;
+  gravyPortionId: string | null;
+  ricePortionId: string | null;
   gravyLabel: string | null;
   riceLabel: string | null;
+  updatedAt: string;
 } | null;
 
 type Step = 'view' | 'choice' | 'portions' | 'confirm-no';
@@ -24,6 +27,7 @@ export function ThaliRequestCard({
   riceOptions,
   rotiMin,
   rotiMax,
+  cutoffTime,
   action,
 }: {
   serviceDate: string;
@@ -34,12 +38,13 @@ export function ThaliRequestCard({
   riceOptions: PortionOption[];
   rotiMin: number;
   rotiMax: number;
+  cutoffTime: string;
   action: (formData: FormData) => void;
 }) {
   const [step, setStep] = useState<Step>(existingRequest ? 'view' : 'choice');
-  const [gravyPortionId, setGravyPortionId] = useState('');
-  const [ricePortionId, setRicePortionId] = useState('');
-  const [rotiQuantity, setRotiQuantity] = useState(rotiMin);
+  const [gravyPortionId, setGravyPortionId] = useState(existingRequest?.gravyPortionId ?? '');
+  const [ricePortionId, setRicePortionId] = useState(existingRequest?.ricePortionId ?? '');
+  const [rotiQuantity, setRotiQuantity] = useState(existingRequest?.rotiQuantity ?? rotiMin);
 
   if (cutoffPassed) {
     return (
@@ -48,7 +53,7 @@ export function ThaliRequestCard({
           <Lock className="size-6" />
           Request Closed
         </div>
-        <p className="mt-2 text-lg text-gray-600">{serviceDateLabel}&apos;s thali selection closed at 6:00 PM.</p>
+        <p className="mt-2 text-lg text-gray-600">{serviceDateLabel}&apos;s thali selection closed at {cutoffTime}.</p>
         {existingRequest ? (
           existingRequest.wantsThali ? (
             <div className="mt-4 space-y-1 text-lg">
@@ -81,7 +86,7 @@ export function ThaliRequestCard({
             <p>Roti: {existingRequest.rotiQuantity}</p>
           </div>
         )}
-        <p className="mt-4 text-lg text-gray-600">You can change your selection until 6:00 PM today.</p>
+        <p className="mt-4 text-lg text-gray-600">You can change your selection until {cutoffTime} today.</p>
         <Button type="button" className="mt-4 h-14 w-full text-xl" onClick={() => setStep('choice')}>
           Change Selection
         </Button>
@@ -122,7 +127,7 @@ export function ThaliRequestCard({
 
         <div className="mt-4">
           <p className="text-lg font-semibold">Gravy</p>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Gravy">
             {gravyOptions.map((opt) => (
               <button
                 key={opt.id}
@@ -143,7 +148,7 @@ export function ThaliRequestCard({
 
         <div className="mt-4">
           <p className="text-lg font-semibold">Rice</p>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Rice">
             {riceOptions.map((opt) => (
               <button
                 key={opt.id}
@@ -167,14 +172,16 @@ export function ThaliRequestCard({
           <div className="mt-2 flex items-center gap-4">
             <button
               type="button"
+              aria-label="Decrease roti quantity"
               onClick={() => setRotiQuantity((q) => Math.max(rotiMin, q - 1))}
               className="h-12 w-12 rounded-lg border border-gray-300 text-xl"
             >
               −
             </button>
-            <span className="w-8 text-center text-xl font-semibold">{rotiQuantity}</span>
+            <span className="w-8 text-center text-xl font-semibold" aria-live="polite">{rotiQuantity}</span>
             <button
               type="button"
+              aria-label="Increase roti quantity"
               onClick={() => setRotiQuantity((q) => Math.min(rotiMax, q + 1))}
               className="h-12 w-12 rounded-lg border border-gray-300 text-xl"
             >

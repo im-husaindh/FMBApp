@@ -13,8 +13,13 @@ function addDays(dateStr: string, days: number): string {
   return dt.toISOString().slice(0, 10);
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const profile = await requireRole(['user', 'admin', 'super_admin']);
+  const { error: errorParam } = await searchParams;
   const supabase = await createServerSupabaseClient();
 
   const settings = await getSettings(supabase, [
@@ -70,21 +75,36 @@ export default async function DashboardPage() {
     .eq('active', true)
     .order('sort_order');
 
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('thali_requests')
-    .select('wants_thali, gravy_portion_id, rice_portion_id, roti_quantity')
+    .select('wants_thali, gravy_portion_id, rice_portion_id, roti_quantity, updated_at')
     .eq('service_date', tomorrow)
+    .eq('user_id', profile.id)
     .maybeSingle();
+
+  if (existingError) {
+    console.error('Failed to load existing thali request:', existingError);
+  }
 
   let existingRequest: ExistingRequest = null;
   if (existing) {
     existingRequest = {
       wantsThali: existing.wants_thali,
       rotiQuantity: existing.roti_quantity,
+      gravyPortionId: existing.gravy_portion_id,
+      ricePortionId: existing.rice_portion_id,
       gravyLabel: (gravyOptions ?? []).find((o) => o.id === existing.gravy_portion_id)?.label ?? null,
       riceLabel: (riceOptions ?? []).find((o) => o.id === existing.rice_portion_id)?.label ?? null,
+      updatedAt: existing.updated_at,
     };
   }
+
+  const errorMessage =
+    errorParam === 'cutoff_passed'
+      ? 'Selection time has closed. Your previous saved selection has been kept.'
+      : errorParam === 'invalid'
+        ? 'Your selection was not saved. Please try again.'
+        : null;
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
@@ -96,6 +116,10 @@ export default async function DashboardPage() {
           </button>
         </form>
       </div>
+
+      {errorMessage && (
+        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
+      )}
 
       <h2 className="mt-6 text-2xl font-bold">Tomorrow&apos;s Thali</h2>
       <p className="text-lg text-gray-600">{tomorrow}</p>
@@ -111,7 +135,7 @@ export default async function DashboardPage() {
 
       <div className="mt-4">
         <ThaliRequestCard
-          key={JSON.stringify(existingRequest)}
+          key={existingRequest?.updatedAt ?? 'none'}
           serviceDate={tomorrow}
           serviceDateLabel="tomorrow"
           cutoffPassed={cutoffPassed}
@@ -120,6 +144,7 @@ export default async function DashboardPage() {
           riceOptions={riceOptions ?? []}
           rotiMin={rotiMin}
           rotiMax={rotiMax}
+          cutoffTime={cutoffTime}
           action={submitThaliRequestAction}
         />
       </div>
