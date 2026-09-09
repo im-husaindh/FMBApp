@@ -46,6 +46,20 @@ export async function submitThaliRequestAction(formData: FormData) {
     redirect('/dashboard?error=cutoff_passed');
   }
 
+  const [{ data: leaveRows }, { data: holidayRows }] = await Promise.all([
+    supabase
+      .from('user_leaves')
+      .select('id')
+      .eq('user_id', profile.id)
+      .lte('from_date', serviceDate)
+      .gte('to_date', serviceDate),
+    supabase.from('service_holidays').select('id').eq('service_date', serviceDate),
+  ]);
+
+  if ((leaveRows?.length ?? 0) > 0 || (holidayRows?.length ?? 0) > 0) {
+    redirect('/dashboard?error=unavailable');
+  }
+
   const { error } = await supabase.from('thali_requests').upsert(
     {
       user_id: profile.id,
@@ -60,10 +74,10 @@ export async function submitThaliRequestAction(formData: FormData) {
   );
 
   if (error) {
-    // The only realistic cause at this point (shape already validated above) is the
-    // RLS with-check's cutoff condition failing due to a race between page load and
-    // submit — same user-facing message as the fast-path check above (§29).
-    redirect('/dashboard?error=cutoff_passed');
+    // The only realistic causes at this point (shape already validated, leave/holiday
+    // already checked above) are the RLS with-check's cutoff/leave/holiday conditions
+    // failing due to a race between page load and submit.
+    redirect('/dashboard?error=unavailable');
   }
 
   redirect('/dashboard');
