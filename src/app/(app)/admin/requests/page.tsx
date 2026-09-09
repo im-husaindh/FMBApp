@@ -3,7 +3,7 @@ import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSettings, SETTINGS_KEYS } from '@/lib/settings';
 import { todayInTimezone, addDays } from '@/lib/time/cutoff';
-import type { ThaliRequestRow, PortionOptionRow } from '@/lib/reports/daily-summary';
+import type { ThaliRequestRow } from '@/lib/reports/daily-summary';
 import {
   buildRequestListRows,
   filterRequestListRows,

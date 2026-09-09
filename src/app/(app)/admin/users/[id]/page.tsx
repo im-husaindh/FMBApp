@@ -28,24 +28,38 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
     redirect('/admin/users/search?error=not_found');
   }
 
+  const errorState = (
+    <main className="mx-auto max-w-2xl px-4 py-10">
+      <Link href="/admin/users/search" className="text-lg text-blue-600 underline">
+        ← Back to Search
+      </Link>
+      <h1 className="mt-4 text-3xl font-bold">{user.full_name}</h1>
+      <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+        Could not load this user&apos;s status and history. Please try again.
+      </p>
+    </main>
+  );
+
   const settings = await getSettings(supabase, [SETTINGS_KEYS.TIMEZONE]);
   const timezone = (settings[SETTINGS_KEYS.TIMEZONE] as string) ?? 'Asia/Kolkata';
   const today = todayInTimezone(timezone);
   const tomorrow = addDays(today, 1);
 
-  const { data: leaveRows } = await supabase
+  const { data: leaveRows, error: leaveError } = await supabase
     .from('user_leaves')
     .select('from_date, to_date')
     .eq('user_id', id)
     .gte('to_date', today);
+  if (leaveError) return errorState;
   const isOnLeave = (date: string) => (leaveRows ?? []).some((l) => l.from_date <= date && date <= l.to_date);
 
-  const { data: recentRequests } = await supabase
+  const { data: recentRequests, error: recentRequestsError } = await supabase
     .from('thali_requests')
     .select('service_date, wants_thali, gravy_portion_id, rice_portion_id, roti_quantity')
     .eq('user_id', id)
     .order('service_date', { ascending: false })
     .limit(14);
+  if (recentRequestsError) return errorState;
 
   const requestByDate = new Map((recentRequests ?? []).map((r) => [r.service_date, r]));
   const gravyRiceIds = [
@@ -53,9 +67,10 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
       (recentRequests ?? []).flatMap((r) => [r.gravy_portion_id, r.rice_portion_id]).filter((v): v is string => !!v)
     ),
   ];
-  const { data: portionOptions } = gravyRiceIds.length
+  const { data: portionOptions, error: portionOptionsError } = gravyRiceIds.length
     ? await supabase.from('portion_options').select('id, label').in('id', gravyRiceIds)
-    : { data: [] as { id: string; label: string }[] };
+    : { data: [] as { id: string; label: string }[], error: null };
+  if (portionOptionsError) return errorState;
   const labelById = new Map((portionOptions ?? []).map((o) => [o.id, o.label]));
 
   const todayRequest = requestByDate.get(today);
