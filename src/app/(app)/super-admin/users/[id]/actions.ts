@@ -63,12 +63,13 @@ export async function sendPasswordResetAction(formData: FormData) {
   const targetId = formData.get('userId') as string;
   const targetEmail = formData.get('email') as string;
 
-  // Same non-privileged mechanism /forgot-password already uses — always
-  // succeeds from the caller's perspective, matching that page's own
-  // "don't reveal whether the email exists" behavior.
-  await supabase.auth.resetPasswordForEmail(targetEmail, {
+  const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
     redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
   });
+
+  if (error) {
+    redirect(`/super-admin/users/${targetId}?error=reset_failed`);
+  }
 
   redirect(`/super-admin/users/${targetId}?reset_sent=1`);
 }

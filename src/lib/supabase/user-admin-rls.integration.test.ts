@@ -9,7 +9,7 @@ const skip = !url || !anonKey || !serviceKey;
 describe.skipIf(skip)('Super-admin user management RLS', () => {
   it('a super_admin can change another user\'s role and active status', async () => {
     const serviceClient = createClient(url!, serviceKey!);
-    const { data: target } = await serviceClient.from('profiles').select('id, role, active').eq('user_code', 'US001').single();
+    const { data: target } = await serviceClient.from('profiles').select('id, role, active').eq('user_code', 'US015').single();
     const originalRole = target!.role;
     const originalActive = target!.active;
 

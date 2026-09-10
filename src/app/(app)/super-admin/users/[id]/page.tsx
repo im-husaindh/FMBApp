@@ -35,7 +35,9 @@ export default async function SuperAdminUserEditPage({
         ? 'You cannot change your own role or active status.'
         : error === 'save_failed'
           ? 'Could not save these changes. Please try again.'
-          : null;
+          : error === 'reset_failed'
+            ? 'Could not send the password reset email. Please try again.'
+            : null;
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
@@ -92,14 +94,8 @@ export default async function SuperAdminUserEditPage({
           <label className="text-lg font-semibold" htmlFor="email">
             Email
           </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            defaultValue={user.email ?? ''}
-            required
-            className="mt-1 h-12 w-full rounded-lg border border-gray-300 px-3 text-lg"
-          />
+          <p className="mt-1 flex h-12 items-center text-lg text-gray-500">{user.email}</p>
+          <input type="hidden" name="email" value={user.email ?? ''} />
         </div>
 
         <div>
