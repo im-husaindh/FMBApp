@@ -58,6 +58,9 @@ export default async function AdminPage() {
           <Link href="/admin/concerns" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
             Concerns
           </Link>
+          <Link href="/admin/reports" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
+            Reports
+          </Link>
         </div>
       </main>
     );
@@ -189,6 +192,9 @@ export default async function AdminPage() {
         </Link>
         <Link href="/admin/concerns" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
           Concerns
+        </Link>
+        <Link href="/admin/reports" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">
+          Reports
         </Link>
       </div>
     </main>
