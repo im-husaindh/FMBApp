@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { menuVersionCreateSchema } from '@/lib/validation/menu';
+import { logAuditEvent } from '@/lib/audit';
 
 export async function updateMenuVersionAction(formData: FormData) {
   await requireRole(['admin', 'super_admin']);
@@ -23,6 +24,12 @@ export async function updateMenuVersionAction(formData: FormData) {
   }
 
   const supabase = await createServerSupabaseClient();
+
+  const { data: previousVersion } = await supabase
+    .from('menu_versions')
+    .select('title, notes')
+    .eq('id', versionId)
+    .maybeSingle();
 
   const { error: updateError } = await supabase
     .from('menu_versions')
@@ -50,6 +57,14 @@ export async function updateMenuVersionAction(formData: FormData) {
     redirect(`/admin/menu/${menuId}?error=save_failed`);
   }
 
+  await logAuditEvent(supabase, {
+    action: 'menu_edited',
+    entityType: 'menu_version',
+    entityId: versionId,
+    previousState: previousVersion ? { title: previousVersion.title, notes: previousVersion.notes } : null,
+    newState: { title: parsed.data.title || null, notes: parsed.data.notes || null },
+  });
+
   redirect(`/admin/menu/${menuId}`);
 }
 
@@ -74,6 +89,12 @@ export async function submitForApprovalAction(formData: FormData) {
     redirect(`/admin/menu/${menuId}?error=no_items`);
   }
 
+  const { data: previousVersion } = await supabase
+    .from('menu_versions')
+    .select('status')
+    .eq('id', versionId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from('menu_versions')
     .update({
@@ -87,6 +108,14 @@ export async function submitForApprovalAction(formData: FormData) {
   if (error) {
     redirect(`/admin/menu/${menuId}?error=submit_failed`);
   }
+
+  await logAuditEvent(supabase, {
+    action: 'menu_submitted',
+    entityType: 'menu_version',
+    entityId: versionId,
+    previousState: { status: previousVersion?.status ?? null },
+    newState: { status: 'pending_approval' },
+  });
 
   redirect(`/admin/menu/${menuId}`);
 }
@@ -153,6 +182,15 @@ export async function createNewVersionAction(formData: FormData) {
       }
     }
   }
+
+  await logAuditEvent(supabase, {
+    action: 'menu_edited',
+    entityType: 'menu_version',
+    entityId: newVersion!.id,
+    newState: {
+      copiedFromVersionId: menu?.current_approved_version_id ?? null,
+    },
+  });
 
   redirect(`/admin/menu/${menuId}`);
 }

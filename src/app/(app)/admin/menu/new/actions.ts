@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { menuVersionCreateSchema } from '@/lib/validation/menu';
+import { logAuditEvent } from '@/lib/audit';
 
 export async function createMenuAction(formData: FormData) {
   const profile = await requireRole(['admin', 'super_admin']);
@@ -93,6 +94,17 @@ export async function createMenuAction(formData: FormData) {
   if (itemsError) {
     redirect(`/admin/menu/${menuId}?error=items_save_failed`);
   }
+
+  await logAuditEvent(supabase, {
+    action: 'menu_created',
+    entityType: 'menu_version',
+    entityId: version!.id,
+    newState: {
+      title: parsed.data.title || null,
+      notes: parsed.data.notes || null,
+      itemCount: itemRows.length,
+    },
+  });
 
   redirect(`/admin/menu/${menuId}`);
 }
