@@ -1,9 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const size = { width: 512, height: 512 };
-export const contentType = 'image/png';
-
-export default function Icon512() {
+export async function GET() {
   return new ImageResponse(
     (
       <div
@@ -23,6 +20,6 @@ export default function Icon512() {
         FT
       </div>
     ),
-    { ...size }
+    { width: 512, height: 512 }
   );
 }
