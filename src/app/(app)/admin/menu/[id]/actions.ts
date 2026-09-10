@@ -31,12 +31,13 @@ export async function updateMenuVersionAction(formData: FormData) {
     .eq('id', versionId)
     .maybeSingle();
 
-  const { error: updateError } = await supabase
+  const { data: updatedVersion, error: updateError } = await supabase
     .from('menu_versions')
     .update({ title: parsed.data.title || null, notes: parsed.data.notes || null })
-    .eq('id', versionId);
+    .eq('id', versionId)
+    .select('id');
 
-  if (updateError) {
+  if (updateError || !updatedVersion?.length) {
     redirect(`/admin/menu/${menuId}?error=save_failed`);
   }
 
@@ -95,7 +96,7 @@ export async function submitForApprovalAction(formData: FormData) {
     .eq('id', versionId)
     .maybeSingle();
 
-  const { error } = await supabase
+  const { data: updatedVersion, error } = await supabase
     .from('menu_versions')
     .update({
       status: 'pending_approval',
@@ -103,9 +104,10 @@ export async function submitForApprovalAction(formData: FormData) {
       submitted_at: new Date().toISOString(),
     })
     .eq('id', versionId)
-    .in('status', ['draft', 'rejected']);
+    .in('status', ['draft', 'rejected'])
+    .select('id');
 
-  if (error) {
+  if (error || !updatedVersion?.length) {
     redirect(`/admin/menu/${menuId}?error=submit_failed`);
   }
 
