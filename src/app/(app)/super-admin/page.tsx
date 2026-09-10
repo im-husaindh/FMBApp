@@ -29,6 +29,12 @@ export default async function SuperAdminPage() {
         >
           Manage Users
         </Link>
+        <Link
+          href="/super-admin/audit"
+          className="inline-block rounded-lg bg-blue-600 px-4 py-3 text-lg text-white"
+        >
+          Audit Log
+        </Link>
       </div>
     </main>
   );
