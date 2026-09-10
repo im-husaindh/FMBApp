@@ -3,9 +3,14 @@
 import { useEffect, useState } from 'react';
 
 export function OfflineBanner() {
-  const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
+    // initial sync read of navigator.onLine must happen client-side only;
+    // navigator doesn't exist during SSR (a lazy useState initializer would run
+    // during SSR and read the wrong value).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsOffline(!navigator.onLine);
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
     window.addEventListener('online', handleOnline);
