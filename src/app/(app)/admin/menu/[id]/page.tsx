@@ -36,7 +36,7 @@ export default async function AdminMenuDetailPage({
     <main className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="text-3xl font-bold">{menu?.service_date}</h1>
       {error && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
           Something went wrong saving your changes. Please try again.
         </p>
       )}

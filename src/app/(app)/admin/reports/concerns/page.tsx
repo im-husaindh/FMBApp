@@ -21,7 +21,7 @@ export default async function ConcernReportPage({
         ← Back to Reports
       </Link>
       <h1 className="mt-4 text-3xl font-bold">Concern Report</h1>
-      <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+      <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
         Could not load this report. Please try again.
       </p>
     </main>

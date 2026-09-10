@@ -112,7 +112,7 @@ export default async function UserHistoryReportPage({
       </form>
 
       {searchError && (
-        <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+        <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
           Could not run this search. Please try again.
         </p>
       )}
@@ -136,7 +136,7 @@ export default async function UserHistoryReportPage({
       )}
 
       {historyError && (
-        <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+        <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
           Could not load this user&apos;s history. Please try again.
         </p>
       )}

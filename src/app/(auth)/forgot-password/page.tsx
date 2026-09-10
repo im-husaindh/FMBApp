@@ -25,7 +25,7 @@ export default async function ForgotPasswordPage({
               Enter your email and we&apos;ll send you a reset link.
             </p>
             {error && (
-              <p className="rounded-lg bg-red-50 px-4 py-3 text-center text-lg text-red-700">
+              <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-center text-lg text-red-700">
                 Enter a valid email address.
               </p>
             )}

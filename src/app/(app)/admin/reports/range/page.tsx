@@ -81,7 +81,7 @@ export default async function DateRangeReportPage({
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
         {header}
-        <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+        <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
           The start date must be on or before the end date.
         </p>
       </main>
@@ -93,7 +93,7 @@ export default async function DateRangeReportPage({
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
         {header}
-        <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+        <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
           Please choose a range of {MAX_RANGE_DAYS} days or fewer.
         </p>
       </main>
@@ -103,7 +103,7 @@ export default async function DateRangeReportPage({
   const errorState = (
     <main className="mx-auto max-w-2xl px-4 py-10">
       {header}
-      <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+      <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
         Could not load this report. Please try again.
       </p>
     </main>

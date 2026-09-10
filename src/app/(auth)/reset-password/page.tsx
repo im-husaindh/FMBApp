@@ -16,7 +16,7 @@ export default async function ResetPasswordPage({
         <h1 className="text-center text-2xl font-bold">Set a New Password</h1>
 
         {error && (
-          <p className="rounded-lg bg-red-50 px-4 py-3 text-center text-lg text-red-700">
+          <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-center text-lg text-red-700">
             {error === 'failed'
               ? 'Could not update your password. The reset link may have expired.'
               : 'Passwords must match and be at least 6 characters.'}

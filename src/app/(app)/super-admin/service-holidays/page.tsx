@@ -30,7 +30,7 @@ export default async function ServiceHolidaysPage({
     <main className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="text-3xl font-bold">No-Service Dates</h1>
       {errorMessage && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
       )}
 
       <form

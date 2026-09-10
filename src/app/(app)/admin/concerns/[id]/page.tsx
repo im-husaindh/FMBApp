@@ -65,7 +65,7 @@ export default async function AdminConcernDetailPage({
         <ConcernStatusBadge status={concern.status} />
       </div>
       {userError ? (
-        <p className="mt-2 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+        <p role="alert" className="mt-2 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
           Could not load member details.
         </p>
       ) : (
@@ -76,12 +76,12 @@ export default async function AdminConcernDetailPage({
       <p className="mt-4 text-lg">{concern.message}</p>
 
       {errorMessage && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
       )}
 
       <h2 className="mt-8 text-xl font-bold">Updates</h2>
       {(updatesError || adminsError) && (
-        <p className="mt-2 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+        <p role="alert" className="mt-2 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
           Could not load the full update history. Please refresh and try again.
         </p>
       )}

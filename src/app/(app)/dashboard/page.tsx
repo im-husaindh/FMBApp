@@ -135,7 +135,7 @@ export default async function DashboardPage({
       </div>
 
       {errorMessage && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
       )}
 
       <h2 className="mt-6 text-2xl font-bold">Tomorrow&apos;s Thali</h2>

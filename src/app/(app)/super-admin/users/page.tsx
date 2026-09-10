@@ -15,7 +15,7 @@ export default async function SuperAdminUsersPage({
   const errorState = (
     <main className="mx-auto max-w-4xl px-4 py-10">
       <h1 className="text-3xl font-bold">Manage Users</h1>
-      <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+      <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
         Could not load users. Please try again.
       </p>
     </main>
@@ -46,7 +46,7 @@ export default async function SuperAdminUsersPage({
         </p>
       )}
       {errorMessage && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
       )}
 
       <h2 className="mt-6 text-2xl font-bold">Add User</h2>

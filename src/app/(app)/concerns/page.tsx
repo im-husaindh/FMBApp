@@ -45,7 +45,7 @@ export default async function ConcernsPage({
         </p>
       )}
       {errorMessage && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
       )}
 
       <h2 className="mt-6 text-2xl font-bold">Raise Food Concern</h2>
@@ -99,7 +99,7 @@ export default async function ConcernsPage({
 
       <h2 className="mt-8 text-2xl font-bold">Your Concerns</h2>
       {listError && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
           Could not load your concerns. Please try again.
         </p>
       )}

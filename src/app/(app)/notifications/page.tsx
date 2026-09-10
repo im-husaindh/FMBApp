@@ -29,7 +29,7 @@ export default async function NotificationsPage() {
       <h1 className="text-3xl font-bold">Notifications</h1>
 
       {error && (
-        <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+        <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
           Could not load your notifications. Please try again.
         </p>
       )}

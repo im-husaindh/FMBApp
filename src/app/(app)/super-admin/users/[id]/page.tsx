@@ -57,7 +57,7 @@ export default async function SuperAdminUserEditPage({
         </p>
       )}
       {errorMessage && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
       )}
 
       <form action={updateUserAction} className="mt-6 space-y-4 rounded-xl border border-gray-200 p-6">

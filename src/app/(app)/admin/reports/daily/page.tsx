@@ -17,7 +17,7 @@ export default async function DailyThaliReportPage({
   const errorState = (
     <main className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="text-3xl font-bold">Daily Thali Report</h1>
-      <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+      <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
         Could not load this report. Please try again.
       </p>
     </main>

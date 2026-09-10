@@ -34,7 +34,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
         ← Back to Search
       </Link>
       <h1 className="mt-4 text-3xl font-bold">{user.full_name}</h1>
-      <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+      <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
         Could not load this user&apos;s status and history. Please try again.
       </p>
     </main>

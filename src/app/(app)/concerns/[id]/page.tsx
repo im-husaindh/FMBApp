@@ -51,12 +51,12 @@ export default async function ConcernDetailPage({ params }: { params: Promise<{ 
       <p className="mt-4 text-lg">{concern.message}</p>
 
       {updatesError && (
-        <div className="mt-4 bg-red-50 px-4 py-3 text-lg text-red-700 rounded-lg">
+        <div role="alert" className="mt-4 bg-red-50 px-4 py-3 text-lg text-red-700 rounded-lg">
           Failed to load updates. Please try again later.
         </div>
       )}
       {adminsError && (
-        <div className="mt-4 bg-red-50 px-4 py-3 text-lg text-red-700 rounded-lg">
+        <div role="alert" className="mt-4 bg-red-50 px-4 py-3 text-lg text-red-700 rounded-lg">
           Failed to load administrator information. Some names may not display correctly.
         </div>
       )}
