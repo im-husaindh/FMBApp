@@ -201,31 +201,31 @@ export default async function DateRangeReportPage({
           <table className="mt-6 w-full text-left">
             <tbody className="text-lg">
               <tr className="border-b border-gray-100">
-                <td className="py-2 font-semibold">Total Days</td>
+                <th scope="row" className="py-2 text-left font-semibold">Total Days</th>
                 <td className="py-2">{summary.totalDays}</td>
               </tr>
               <tr className="border-b border-gray-100">
-                <td className="py-2 font-semibold">Total Thalis</td>
+                <th scope="row" className="py-2 text-left font-semibold">Total Thalis</th>
                 <td className="py-2">{summary.totalThalis}</td>
               </tr>
               <tr className="border-b border-gray-100">
-                <td className="py-2 font-semibold">Average Daily Thalis</td>
+                <th scope="row" className="py-2 text-left font-semibold">Average Daily Thalis</th>
                 <td className="py-2">{summary.averageDailyThalis.toFixed(1)}</td>
               </tr>
               <tr className="border-b border-gray-100">
-                <td className="py-2 font-semibold">No Thali</td>
+                <th scope="row" className="py-2 text-left font-semibold">No Thali</th>
                 <td className="py-2">{summary.totalNoThali}</td>
               </tr>
               <tr className="border-b border-gray-100">
-                <td className="py-2 font-semibold">No Response</td>
+                <th scope="row" className="py-2 text-left font-semibold">No Response</th>
                 <td className="py-2">{summary.totalNoResponse}</td>
               </tr>
               <tr className="border-b border-gray-100">
-                <td className="py-2 font-semibold">Leave</td>
+                <th scope="row" className="py-2 text-left font-semibold">Leave</th>
                 <td className="py-2">{summary.totalOnLeave}</td>
               </tr>
               <tr>
-                <td className="py-2 font-semibold">Total Roti</td>
+                <th scope="row" className="py-2 text-left font-semibold">Total Roti</th>
                 <td className="py-2">{summary.totalRotis}</td>
               </tr>
             </tbody>
@@ -236,7 +236,7 @@ export default async function DateRangeReportPage({
             <tbody className="text-lg">
               {summary.gravyBreakdown.map((b) => (
                 <tr key={b.label} className="border-b border-gray-100">
-                  <td className="py-2">{b.label}</td>
+                  <th scope="row" className="py-2 text-left font-normal">{b.label}</th>
                   <td className="py-2">{b.count}</td>
                 </tr>
               ))}
@@ -248,7 +248,7 @@ export default async function DateRangeReportPage({
             <tbody className="text-lg">
               {summary.riceBreakdown.map((b) => (
                 <tr key={b.label} className="border-b border-gray-100">
-                  <td className="py-2">{b.label}</td>
+                  <th scope="row" className="py-2 text-left font-normal">{b.label}</th>
                   <td className="py-2">{b.count}</td>
                 </tr>
               ))}
@@ -260,7 +260,7 @@ export default async function DateRangeReportPage({
             <tbody className="text-lg">
               {summary.rotiBreakdown.map((b) => (
                 <tr key={b.quantity} className="border-b border-gray-100">
-                  <td className="py-2">{b.quantity}</td>
+                  <th scope="row" className="py-2 text-left font-normal">{b.quantity}</th>
                   <td className="py-2">{b.count}</td>
                 </tr>
               ))}

@@ -86,7 +86,7 @@ export default async function ConcernReportPage({
             <tbody className="text-lg">
               {summary.byCategory.map((b) => (
                 <tr key={b.category} className="border-b border-gray-100">
-                  <td className="py-2">{b.category}</td>
+                  <th scope="row" className="py-2 text-left font-normal">{b.category}</th>
                   <td className="py-2">{b.count}</td>
                 </tr>
               ))}
@@ -98,7 +98,7 @@ export default async function ConcernReportPage({
             <tbody className="text-lg">
               {summary.byStatus.map((b) => (
                 <tr key={b.status} className="border-b border-gray-100">
-                  <td className="py-2">{b.status}</td>
+                  <th scope="row" className="py-2 text-left font-normal">{b.status}</th>
                   <td className="py-2">{b.count}</td>
                 </tr>
               ))}

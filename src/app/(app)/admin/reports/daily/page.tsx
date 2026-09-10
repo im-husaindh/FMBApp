@@ -118,27 +118,27 @@ export default async function DailyThaliReportPage({
       <table className="mt-6 w-full text-left">
         <tbody className="text-lg">
           <tr className="border-b border-gray-100">
-            <td className="py-2 font-semibold">Date</td>
+            <th scope="row" className="py-2 text-left font-semibold">Date</th>
             <td className="py-2">{date}</td>
           </tr>
           <tr className="border-b border-gray-100">
-            <td className="py-2 font-semibold">Total Active Users</td>
+            <th scope="row" className="py-2 text-left font-semibold">Total Active Users</th>
             <td className="py-2">{summary.totalUsers}</td>
           </tr>
           <tr className="border-b border-gray-100">
-            <td className="py-2 font-semibold">Thali Requested</td>
+            <th scope="row" className="py-2 text-left font-semibold">Thali Requested</th>
             <td className="py-2">{summary.thaliCount}</td>
           </tr>
           <tr className="border-b border-gray-100">
-            <td className="py-2 font-semibold">No Thali</td>
+            <th scope="row" className="py-2 text-left font-semibold">No Thali</th>
             <td className="py-2">{summary.noThaliCount}</td>
           </tr>
           <tr className="border-b border-gray-100">
-            <td className="py-2 font-semibold">No Response</td>
+            <th scope="row" className="py-2 text-left font-semibold">No Response</th>
             <td className="py-2">{summary.noResponseCount}</td>
           </tr>
           <tr>
-            <td className="py-2 font-semibold">Leave</td>
+            <th scope="row" className="py-2 text-left font-semibold">Leave</th>
             <td className="py-2">{summary.onLeaveCount}</td>
           </tr>
         </tbody>
@@ -149,7 +149,7 @@ export default async function DailyThaliReportPage({
         <tbody className="text-lg">
           {summary.gravyBreakdown.map((b) => (
             <tr key={b.label} className="border-b border-gray-100">
-              <td className="py-2">{b.label}</td>
+              <th scope="row" className="py-2 text-left font-normal">{b.label}</th>
               <td className="py-2">{b.count}</td>
             </tr>
           ))}
@@ -161,7 +161,7 @@ export default async function DailyThaliReportPage({
         <tbody className="text-lg">
           {summary.riceBreakdown.map((b) => (
             <tr key={b.label} className="border-b border-gray-100">
-              <td className="py-2">{b.label}</td>
+              <th scope="row" className="py-2 text-left font-normal">{b.label}</th>
               <td className="py-2">{b.count}</td>
             </tr>
           ))}
@@ -173,12 +173,12 @@ export default async function DailyThaliReportPage({
         <tbody className="text-lg">
           {summary.rotiBreakdown.map((b) => (
             <tr key={b.quantity} className="border-b border-gray-100">
-              <td className="py-2">{b.quantity}</td>
+              <th scope="row" className="py-2 text-left font-normal">{b.quantity}</th>
               <td className="py-2">{b.count}</td>
             </tr>
           ))}
           <tr>
-            <td className="py-2 font-semibold">Total Roti</td>
+            <th scope="row" className="py-2 text-left font-semibold">Total Roti</th>
             <td className="py-2 font-semibold">{summary.totalRotis}</td>
           </tr>
         </tbody>
