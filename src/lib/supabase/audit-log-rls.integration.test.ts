@@ -57,10 +57,13 @@ describe.skipIf(skip)('log_audit_event RPC and audit_logs RLS', () => {
     const adminClient = createClient(url!, anonKey!);
     await adminClient.auth.signInWithPassword({ email: 'admin1@fmb.test', password: 'DevPass123!' });
 
+    // Use a unique entity_id for each test run to avoid collisions when tests run multiple times
+    const uniqueEntityId = `read-asymmetry-test-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
     const { error: rpcError } = await adminClient.rpc('log_audit_event', {
       p_action: 'leave_created',
       p_entity_type: 'user_leave',
-      p_entity_id: 'read-asymmetry-test',
+      p_entity_id: uniqueEntityId,
       p_previous_state: null,
       p_new_state: { note: 'read asymmetry test' },
       p_ip_address: null,
@@ -70,7 +73,7 @@ describe.skipIf(skip)('log_audit_event RPC and audit_logs RLS', () => {
     const { data: adminReadRows } = await adminClient
       .from('audit_logs')
       .select('id')
-      .eq('entity_id', 'read-asymmetry-test');
+      .eq('entity_id', uniqueEntityId);
     expect(adminReadRows).toHaveLength(0);
 
     const superAdminClient = createClient(url!, anonKey!);
@@ -78,7 +81,7 @@ describe.skipIf(skip)('log_audit_event RPC and audit_logs RLS', () => {
     const { data: superAdminReadRows } = await superAdminClient
       .from('audit_logs')
       .select('id')
-      .eq('entity_id', 'read-asymmetry-test');
+      .eq('entity_id', uniqueEntityId);
     expect(superAdminReadRows).toHaveLength(1);
   });
 });
