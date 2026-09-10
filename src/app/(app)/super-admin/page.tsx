@@ -23,6 +23,12 @@ export default async function SuperAdminPage() {
         >
           No-Service Dates
         </Link>
+        <Link
+          href="/super-admin/users"
+          className="inline-block rounded-lg bg-blue-600 px-4 py-3 text-lg text-white"
+        >
+          Manage Users
+        </Link>
       </div>
     </main>
   );
