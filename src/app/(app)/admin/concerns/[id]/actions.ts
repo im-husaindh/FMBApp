@@ -5,6 +5,7 @@ import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { concernReplySchema } from '@/lib/validation/concern';
 import { notify, type NotificationType } from '@/lib/notifications';
+import { logAuditEvent } from '@/lib/audit';
 
 export async function replyToConcernAction(formData: FormData) {
   const profile = await requireRole(['admin', 'super_admin']);
@@ -23,7 +24,7 @@ export async function replyToConcernAction(formData: FormData) {
 
   const { data: concern, error: concernError } = await supabase
     .from('concerns')
-    .select('user_id')
+    .select('user_id, status')
     .eq('id', concernId)
     .maybeSingle();
 
@@ -54,6 +55,14 @@ export async function replyToConcernAction(formData: FormData) {
   if (updateError) {
     redirect(`/admin/concerns/${concernId}?error=save_failed`);
   }
+
+  await logAuditEvent(supabase, {
+    action: 'concern_status_changed',
+    entityType: 'concern',
+    entityId: concernId,
+    previousState: { status: concern.status },
+    newState: { status: parsed.data.newStatus },
+  });
 
   const notificationType: NotificationType = parsed.data.newStatus === 'resolved' ? 'concern_resolved' : 'concern_response';
   await notify(supabase, concern.user_id, notificationType, { concernId });

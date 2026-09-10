@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { leaveCreateSchema } from '@/lib/validation/leave';
+import { logAuditEvent } from '@/lib/audit';
 
 export async function createLeaveAction(formData: FormData) {
   const profile = await requireRole(['admin', 'super_admin']);
@@ -40,17 +41,33 @@ export async function createLeaveAction(formData: FormData) {
     redirect('/admin/leave?error=overlap');
   }
 
-  const { error } = await supabase.from('user_leaves').insert({
-    user_id: parsed.data.userId,
-    from_date: parsed.data.fromDate,
-    to_date: parsed.data.toDate,
-    reason: parsed.data.reason || null,
-    entered_by: profile.id,
-  });
+  const { data: newLeave, error } = await supabase
+    .from('user_leaves')
+    .insert({
+      user_id: parsed.data.userId,
+      from_date: parsed.data.fromDate,
+      to_date: parsed.data.toDate,
+      reason: parsed.data.reason || null,
+      entered_by: profile.id,
+    })
+    .select('id')
+    .single();
 
-  if (error) {
+  if (error || !newLeave) {
     redirect('/admin/leave?error=save_failed');
   }
+
+  await logAuditEvent(supabase, {
+    action: 'leave_created',
+    entityType: 'user_leave',
+    entityId: newLeave!.id,
+    newState: {
+      userId: parsed.data.userId,
+      fromDate: parsed.data.fromDate,
+      toDate: parsed.data.toDate,
+      reason: parsed.data.reason || null,
+    },
+  });
 
   redirect('/admin/leave');
 }

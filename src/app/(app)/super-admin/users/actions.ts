@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
 import { inviteUserSchema } from '@/lib/validation/user-admin';
+import { logAuditEvent } from '@/lib/audit';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function inviteUserAction(formData: FormData) {
   // Authorization always runs on the caller's own ordinary session first —
@@ -54,6 +56,23 @@ export async function inviteUserAction(formData: FormData) {
       redirect('/super-admin/users?error=role_failed');
     }
   }
+
+  // Deliberately the ordinary cookie-based client, not serviceClient — a
+  // service_role JWT has no auth.uid(), so log_audit_event would record a
+  // null actor if called through it. The inviting super_admin's own
+  // session must be used to capture who actually did this.
+  const auditClient = await createServerSupabaseClient();
+  await logAuditEvent(auditClient, {
+    action: 'user_created',
+    entityType: 'profile',
+    entityId: invited.user.id,
+    newState: {
+      fullName: parsed.data.fullName,
+      email: parsed.data.email,
+      userCode: parsed.data.userCode,
+      role: parsed.data.role,
+    },
+  });
 
   redirect('/super-admin/users?invited=1');
 }
