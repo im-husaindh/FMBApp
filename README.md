@@ -1,8 +1,12 @@
 # FMBRequestThali
 
-Meal/thali request and menu-management system. This is Phase 1 (foundation) —
-project scaffold, database schema, authentication, RBAC/RLS, and centralized
-settings/time helpers. No feature UI yet beyond a role-aware placeholder shell.
+Meal/thali request and menu-management system for a community organization.
+Next.js App Router + Supabase (Postgres/Auth/RLS). Users submit daily thali
+requests before a server-enforced cutoff; admins manage menus, leave,
+concerns, and reporting; super admins approve menus, manage users, and review
+an audit trail. See `HANDOFF.md` for current build status and project
+conventions, and `docs/superpowers/specs/` for the design rationale behind
+each part of the app.
 
 ## Prerequisites
 
@@ -35,13 +39,23 @@ settings/time helpers. No feature UI yet beyond a role-aware placeholder shell.
 
 ## Testing
 
-- `npm run test` — unit tests (no live Supabase required)
-- RLS smoke test requires local Supabase running and seeded; see Task 16 in
-  `docs/superpowers/plans/2026-09-09-phase1-foundation.md` for the exact command.
+- `npm run test` (or `npx vitest run`) runs everything. With no environment
+  variables set, integration tests (`src/lib/**/*.integration.test.ts`)
+  auto-skip; only pure-function unit tests run.
+- To also run the integration tests (RLS policies, RPCs, notifications,
+  audit logging, etc.), export `.env.local`'s variables into your shell
+  first (`export $(grep -v '^#' .env.local | xargs)` on a POSIX shell),
+  against a running, seeded local Supabase instance.
+- `npm run lint` — ESLint, including the `jsx-a11y` accessibility ruleset.
+- Known pre-existing test issues (not regressions — see `HANDOFF.md`): two
+  integration tests fail on a fresh `db reset` until `npm run seed:menus`
+  is re-run, and one test in `rls.integration.test.ts` has an incorrect
+  assertion against otherwise-correct RLS behavior.
 
 ## Project structure
 
-See `docs/superpowers/specs/2026-09-09-phase1-foundation-design.md` for the
-architecture and database design, and the source requirements doc
-`FMBRequestThali Web App — Complete Development Prompt.md` for the full
+See `HANDOFF.md` for current build status, established conventions, and
+known issues. See `docs/superpowers/specs/` for one design doc per
+development phase (architecture and rationale), and the source requirements
+doc `FMBRequestThali Web App — Complete Development Prompt.md` for the full
 product spec across all phases.
