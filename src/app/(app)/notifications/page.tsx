@@ -5,6 +5,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 const NOTIFICATION_COPY: Record<string, string> = {
   concern_response: 'Your concern received a response.',
   concern_resolved: 'Your concern was resolved.',
+  menu_approved: 'A menu has been approved.',
 };
 
 export default async function NotificationsPage() {
@@ -41,10 +42,18 @@ export default async function NotificationsPage() {
 
       <div className="mt-4 space-y-3">
         {(notifications ?? []).map((n) => {
-          const payload = n.payload as { concernId?: string };
+          const payload = n.payload as { concernId?: string; serviceDate?: string };
+          const title = n.type === 'menu_approved' && payload.serviceDate
+            ? `Menu for ${new Date(payload.serviceDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })} has been approved.`
+            : (NOTIFICATION_COPY[n.type] ?? n.type);
           return (
-            <div key={n.id} className="rounded-lg border border-gray-200 px-4 py-3 text-lg">
-              <p>{NOTIFICATION_COPY[n.type] ?? n.type}</p>
+            <div key={n.id} className={`rounded-lg border px-4 py-3 text-lg ${!n.read_at ? 'border-blue-200 bg-blue-50' : 'border-gray-200'}`}>
+              <p>{title}</p>
+              {payload.serviceDate && (
+                <a href="/dashboard" className="text-base text-blue-600 underline">
+                  Submit thali request →
+                </a>
+              )}
               {payload.concernId && (
                 <a href={`/concerns/${payload.concernId}`} className="text-base text-blue-600 underline">
                   View concern

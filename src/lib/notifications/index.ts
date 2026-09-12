@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export const NOTIFICATION_TYPES = {
   CONCERN_RESPONSE: 'concern_response',
   CONCERN_RESOLVED: 'concern_resolved',
+  MENU_APPROVED: 'menu_approved',
 } as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES];
 
@@ -29,5 +30,20 @@ export async function notify(
     // A failed notification must never block the action that triggered it
     // (e.g. an admin's concern reply) — log and continue.
     console.error(`Failed to create notification (${type}) for ${recipientId}:`, error.message);
+  }
+}
+
+/** Bulk-notify multiple recipients in a single insert. Silent on error. */
+export async function notifyMany(
+  supabase: SupabaseClient,
+  recipientIds: string[],
+  type: NotificationType,
+  payload: Record<string, unknown>
+): Promise<void> {
+  if (recipientIds.length === 0) return;
+  const rows = recipientIds.map((id) => ({ recipient_id: id, type, payload }));
+  const { error } = await supabase.from('notifications').insert(rows);
+  if (error) {
+    console.error(`Failed to bulk-notify (${type}):`, error.message);
   }
 }
