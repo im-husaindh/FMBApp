@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -16,6 +17,7 @@ export default async function DailyThaliReportPage({
 
   const errorState = (
     <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
       <h1 className="text-3xl font-bold">Daily Thali Report</h1>
       <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
         Could not load this report. Please try again.
@@ -92,6 +94,7 @@ export default async function DailyThaliReportPage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
       <Link href="/admin/reports" className="text-lg text-blue-600 underline">
         ← Back to Reports
       </Link>

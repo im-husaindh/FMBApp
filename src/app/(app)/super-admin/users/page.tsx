@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -14,6 +15,7 @@ export default async function SuperAdminUsersPage({
 
   const errorState = (
     <main className="mx-auto max-w-4xl px-4 py-10">
+      <BackButton />
       <h1 className="text-3xl font-bold">Manage Users</h1>
       <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
         Could not load users. Please try again.
@@ -38,6 +40,7 @@ export default async function SuperAdminUsersPage({
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
+      <BackButton />
       <h1 className="text-3xl font-bold">Manage Users</h1>
 
       {invited === '1' && (

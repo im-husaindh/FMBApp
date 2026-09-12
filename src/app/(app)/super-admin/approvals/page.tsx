@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { computeMenuDiff } from '@/lib/menu/diff';
@@ -63,6 +64,7 @@ export default async function ApprovalsPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
+      <BackButton />
       <h1 className="text-3xl font-bold">Menu Approvals</h1>
       {actionError && (
         <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">

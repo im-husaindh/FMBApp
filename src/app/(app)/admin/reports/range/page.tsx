@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -80,6 +81,7 @@ export default async function DateRangeReportPage({
   if (from > to) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
         {header}
         <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
           The start date must be on or before the end date.
@@ -92,6 +94,7 @@ export default async function DateRangeReportPage({
   if (dates.length > MAX_RANGE_DAYS) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
         {header}
         <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
           Please choose a range of {MAX_RANGE_DAYS} days or fewer.
@@ -102,6 +105,7 @@ export default async function DateRangeReportPage({
 
   const errorState = (
     <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
       {header}
       <p role="alert" className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
         Could not load this report. Please try again.
@@ -192,6 +196,7 @@ export default async function DateRangeReportPage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
       {header}
 
       {activeUserIds.length === 0 ? (

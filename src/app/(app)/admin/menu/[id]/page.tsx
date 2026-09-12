@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { EditMenuForm } from './edit-menu-form';
@@ -34,6 +35,7 @@ export default async function AdminMenuDetailPage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
       <h1 className="text-3xl font-bold">{menu?.service_date}</h1>
       {error && (
         <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">

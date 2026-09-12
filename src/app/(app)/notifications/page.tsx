@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
@@ -26,6 +27,7 @@ export default async function NotificationsPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
       <h1 className="text-3xl font-bold">Notifications</h1>
 
       {error && (
