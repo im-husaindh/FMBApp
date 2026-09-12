@@ -39,35 +39,23 @@ export function thaliRequestSchema(rotiMin: number, rotiMax: number) {
 
 export type ThaliRequestInput = z.infer<ReturnType<typeof thaliRequestSchema>>;
 
-const singleDayItemSchema = (rotiMin: number, rotiMax: number) =>
-  z
-    .object({
-      serviceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      wantsThali: z.boolean(),
-      gravyPortionId: z.string().nullable(),
-      ricePortionId: z.string().nullable(),
-      rotiQuantity: z.number().int().nullable(),
-    })
-    .refine(
-      (d) =>
-        d.wantsThali
-          ? !!d.gravyPortionId &&
-            !!d.ricePortionId &&
-            d.rotiQuantity !== null &&
-            d.rotiQuantity >= rotiMin &&
-            d.rotiQuantity <= rotiMax
-          : d.gravyPortionId === null && d.ricePortionId === null && d.rotiQuantity === null,
-      { message: 'Invalid thali request entry' }
-    );
+const itemQuantitiesSchema = z.record(
+  z.string(),
+  z.union([z.literal(0), z.literal(1), z.literal(2)]),
+);
 
-export function multiDayRequestSchema(rotiMin: number, rotiMax: number) {
-  return z.array(singleDayItemSchema(rotiMin, rotiMax)).min(1);
+const singleDayItemSchema = z.object({
+  serviceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  wantsThali: z.boolean(),
+  itemQuantities: itemQuantitiesSchema,
+});
+
+export function multiDayRequestSchema() {
+  return z.array(singleDayItemSchema).min(1);
 }
 
 export type MultiDayRequestItem = {
   serviceDate: string;
   wantsThali: boolean;
-  gravyPortionId: string | null;
-  ricePortionId: string | null;
-  rotiQuantity: number | null;
+  itemQuantities: Record<string, 0 | 1 | 2>;
 };

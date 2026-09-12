@@ -24,13 +24,9 @@ export default async function DashboardPage({
   const settings = await getSettings(supabase, [
     SETTINGS_KEYS.CUTOFF_TIME,
     SETTINGS_KEYS.TIMEZONE,
-    SETTINGS_KEYS.ROTI_MIN_QTY,
-    SETTINGS_KEYS.ROTI_MAX_QTY,
   ]);
   const cutoffTime = (settings[SETTINGS_KEYS.CUTOFF_TIME] as string) ?? '23:30';
   const timezone = (settings[SETTINGS_KEYS.TIMEZONE] as string) ?? 'Asia/Kolkata';
-  const rotiMin = (settings[SETTINGS_KEYS.ROTI_MIN_QTY] as number) ?? 0;
-  const rotiMax = (settings[SETTINGS_KEYS.ROTI_MAX_QTY] as number) ?? 6;
 
   const today = todayInTimezone(timezone);
   const windowEnd = addDays(today, 60);
@@ -102,7 +98,7 @@ export default async function DashboardPage({
   // Existing thali requests for all period dates
   const { data: existingRequests } = await supabase
     .from('thali_requests')
-    .select('service_date, wants_thali, gravy_portion_id, rice_portion_id, roti_quantity')
+    .select('service_date, wants_thali, item_quantities')
     .eq('user_id', profile.id)
     .in('service_date', allPeriodDates);
 
@@ -137,22 +133,6 @@ export default async function DashboardPage({
     return null;
   }
 
-  // Portion options
-  const [{ data: gravyOptions }, { data: riceOptions }] = await Promise.all([
-    supabase
-      .from('portion_options')
-      .select('id, label')
-      .eq('category', 'gravy')
-      .eq('active', true)
-      .order('sort_order'),
-    supabase
-      .from('portion_options')
-      .select('id, label')
-      .eq('category', 'rice')
-      .eq('active', true)
-      .order('sort_order'),
-  ]);
-
   // Build DayData[][] — one array of 14 days per period
   const periodDays: DayData[][] = periods.map((period) => {
     const dates = getDatesInRange(period.start, period.end);
@@ -180,9 +160,7 @@ export default async function DashboardPage({
       const existing = req
         ? {
             wantsThali: req.wants_thali,
-            gravyPortionId: req.gravy_portion_id,
-            ricePortionId: req.rice_portion_id,
-            rotiQuantity: req.roti_quantity,
+            itemQuantities: (req.item_quantities ?? {}) as Record<string, 0 | 1 | 2>,
           }
         : null;
 
@@ -227,10 +205,6 @@ export default async function DashboardPage({
       <MultiDaySelector
         periods={periods}
         periodDays={periodDays}
-        gravyOptions={gravyOptions ?? []}
-        riceOptions={riceOptions ?? []}
-        rotiMin={rotiMin}
-        rotiMax={rotiMax}
         action={submitMultiDayRequestsAction}
       />
     </main>

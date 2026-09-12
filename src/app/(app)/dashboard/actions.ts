@@ -26,15 +26,11 @@ export async function submitMultiDayRequestsAction(formData: FormData) {
   const settings = await getSettings(supabase, [
     SETTINGS_KEYS.CUTOFF_TIME,
     SETTINGS_KEYS.TIMEZONE,
-    SETTINGS_KEYS.ROTI_MIN_QTY,
-    SETTINGS_KEYS.ROTI_MAX_QTY,
   ]);
   const cutoffTime = (settings[SETTINGS_KEYS.CUTOFF_TIME] as string) ?? '23:30';
   const timezone = (settings[SETTINGS_KEYS.TIMEZONE] as string) ?? 'Asia/Kolkata';
-  const rotiMin = (settings[SETTINGS_KEYS.ROTI_MIN_QTY] as number) ?? 0;
-  const rotiMax = (settings[SETTINGS_KEYS.ROTI_MAX_QTY] as number) ?? 6;
 
-  const result = multiDayRequestSchema(rotiMin, rotiMax).safeParse(parsed);
+  const result = multiDayRequestSchema().safeParse(parsed);
   if (!result.success) {
     redirect('/dashboard?error=invalid');
   }
@@ -77,9 +73,11 @@ export async function submitMultiDayRequestsAction(formData: FormData) {
     user_id: profile.id,
     service_date: item.serviceDate,
     wants_thali: item.wantsThali,
-    gravy_portion_id: item.gravyPortionId,
-    rice_portion_id: item.ricePortionId,
-    roti_quantity: item.rotiQuantity,
+    item_quantities: item.itemQuantities,
+    // clear old per-category fields that the new model replaces
+    gravy_portion_id: null,
+    rice_portion_id: null,
+    roti_quantity: null,
     updated_at: new Date().toISOString(),
   }));
 

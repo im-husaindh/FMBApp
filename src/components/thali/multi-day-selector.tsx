@@ -15,87 +15,39 @@ export interface DayData {
   unavailableReason: string | null;
   existing: {
     wantsThali: boolean;
-    gravyPortionId: string | null;
-    ricePortionId: string | null;
-    rotiQuantity: number | null;
+    itemQuantities: Record<string, 0 | 1 | 2>;
   } | null;
 }
 
 export interface MultiDaySelectorProps {
   periods: BiweeklyPeriod[];
   periodDays: DayData[][];
-  gravyOptions: { id: string; label: string }[];
-  riceOptions: { id: string; label: string }[];
-  rotiMin: number;
-  rotiMax: number;
   action: (formData: FormData) => Promise<void>;
 }
 
 type DayState = {
   wantsThali: boolean;
-  gravyPortionId: string;
-  ricePortionId: string;
-  rotiQuantity: number;
+  itemQuantities: Record<string, 0 | 1 | 2>;
 };
 
-function defaultState(
-  existing: DayData['existing'],
-  gravyOptions: { id: string }[],
-  riceOptions: { id: string }[],
-  rotiMin: number,
-): DayState {
-  if (existing?.wantsThali) {
-    return {
-      wantsThali: true,
-      gravyPortionId: existing.gravyPortionId ?? gravyOptions[0]?.id ?? '',
-      ricePortionId: existing.ricePortionId ?? riceOptions[0]?.id ?? '',
-      rotiQuantity: existing.rotiQuantity ?? rotiMin,
-    };
+function defaultState(existing: DayData['existing'], menuItems: string[]): DayState {
+  if (existing) {
+    // Fill in any menu items missing from a previous save
+    const quantities: Record<string, 0 | 1 | 2> = {};
+    for (const item of menuItems) {
+      quantities[item] = (existing.itemQuantities[item] as 0 | 1 | 2 | undefined) ?? 1;
+    }
+    return { wantsThali: existing.wantsThali, itemQuantities: quantities };
   }
-  if (existing && !existing.wantsThali) {
-    return {
-      wantsThali: false,
-      gravyPortionId: gravyOptions[0]?.id ?? '',
-      ricePortionId: riceOptions[0]?.id ?? '',
-      rotiQuantity: rotiMin,
-    };
-  }
-  return {
-    wantsThali: true,
-    gravyPortionId: gravyOptions[0]?.id ?? '',
-    ricePortionId: riceOptions[0]?.id ?? '',
-    rotiQuantity: rotiMin,
-  };
+  const quantities: Record<string, 0 | 1 | 2> = {};
+  for (const item of menuItems) quantities[item] = 1;
+  return { wantsThali: true, itemQuantities: quantities };
 }
 
-function applyServingPreset(
-  serving: 0 | 1 | 2,
-  gravyOptions: { id: string; label: string }[],
-  riceOptions: { id: string; label: string }[],
-  rotiMin: number,
-  rotiMax: number,
-  current: DayState,
-): DayState {
-  if (serving === 0) return { ...current, wantsThali: false };
-  const rotiMid = Math.round((rotiMin + rotiMax) / 2);
-  if (serving === 1) {
-    const gravy = gravyOptions.find((o) => o.label === 'Regular') ?? gravyOptions[0];
-    const rice = riceOptions.find((o) => o.label === 'Regular') ?? riceOptions[0];
-    return {
-      wantsThali: true,
-      gravyPortionId: gravy?.id ?? current.gravyPortionId,
-      ricePortionId: rice?.id ?? current.ricePortionId,
-      rotiQuantity: rotiMid,
-    };
-  }
-  const gravy = gravyOptions.find((o) => o.label === 'Large') ?? gravyOptions[gravyOptions.length - 1];
-  const rice = riceOptions.find((o) => o.label === 'Large') ?? riceOptions[riceOptions.length - 1];
-  return {
-    wantsThali: true,
-    gravyPortionId: gravy?.id ?? current.gravyPortionId,
-    ricePortionId: rice?.id ?? current.ricePortionId,
-    rotiQuantity: rotiMax,
-  };
+function applyServingPreset(serving: 0 | 1 | 2, menuItems: string[]): DayState {
+  const quantities: Record<string, 0 | 1 | 2> = {};
+  for (const item of menuItems) quantities[item] = serving;
+  return { wantsThali: serving > 0, itemQuantities: quantities };
 }
 
 function formatDateDisplay(serviceDate: string, dayName: string): string {
@@ -108,22 +60,14 @@ function formatDateDisplay(serviceDate: string, dayName: string): string {
   return `${dayName}, ${dayPart}`;
 }
 
-export function MultiDaySelector({
-  periods,
-  periodDays,
-  gravyOptions,
-  riceOptions,
-  rotiMin,
-  rotiMax,
-  action,
-}: MultiDaySelectorProps) {
+export function MultiDaySelector({ periods, periodDays, action }: MultiDaySelectorProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(0);
   const [bulkServing, setBulkServing] = useState<0 | 1 | 2>(1);
   const [dayStates, setDayStates] = useState<Record<string, DayState>>(() => {
     const init: Record<string, DayState> = {};
     for (const days of periodDays) {
       for (const day of days) {
-        init[day.serviceDate] = defaultState(day.existing, gravyOptions, riceOptions, rotiMin);
+        init[day.serviceDate] = defaultState(day.existing, day.menuItems);
       }
     }
     return init;
@@ -137,24 +81,36 @@ export function MultiDaySelector({
     setDayStates((prev) => {
       const next = { ...prev };
       for (const day of openDays) {
-        next[day.serviceDate] = applyServingPreset(
-          bulkServing,
-          gravyOptions,
-          riceOptions,
-          rotiMin,
-          rotiMax,
-          next[day.serviceDate],
-        );
+        next[day.serviceDate] = applyServingPreset(bulkServing, day.menuItems);
       }
       return next;
     });
   }
 
-  function setDayField<K extends keyof DayState>(serviceDate: string, field: K, value: DayState[K]) {
-    setDayStates((prev) => ({
-      ...prev,
-      [serviceDate]: { ...prev[serviceDate], [field]: value },
-    }));
+  function setItemQuantity(serviceDate: string, item: string, qty: 0 | 1 | 2) {
+    setDayStates((prev) => {
+      const current = prev[serviceDate];
+      const newQuantities = { ...current.itemQuantities, [item]: qty };
+      const anyWanted = Object.values(newQuantities).some((v) => v > 0);
+      return {
+        ...prev,
+        [serviceDate]: { wantsThali: anyWanted, itemQuantities: newQuantities },
+      };
+    });
+  }
+
+  function setNotRequired(serviceDate: string, notRequired: boolean, menuItems: string[]) {
+    if (notRequired) {
+      setDayStates((prev) => ({
+        ...prev,
+        [serviceDate]: applyServingPreset(0, menuItems),
+      }));
+    } else {
+      setDayStates((prev) => ({
+        ...prev,
+        [serviceDate]: applyServingPreset(1, menuItems),
+      }));
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -166,9 +122,7 @@ export function MultiDaySelector({
       return {
         serviceDate: day.serviceDate,
         wantsThali: s.wantsThali,
-        gravyPortionId: s.wantsThali ? s.gravyPortionId : null,
-        ricePortionId: s.wantsThali ? s.ricePortionId : null,
-        rotiQuantity: s.wantsThali ? s.rotiQuantity : null,
+        itemQuantities: s.itemQuantities,
       };
     });
     const fd = new FormData();
@@ -178,9 +132,7 @@ export function MultiDaySelector({
   }
 
   if (periods.length === 0) {
-    return (
-      <p className="mt-6 text-gray-600">No upcoming menus have been approved yet.</p>
-    );
+    return <p className="mt-6 text-gray-600">No upcoming menus have been approved yet.</p>;
   }
 
   return (
@@ -286,9 +238,7 @@ export function MultiDaySelector({
                   <p className="mt-1 text-sm text-gray-500">{day.menuItems.join(' · ')}</p>
                 )}
                 <p className="mt-1 text-sm text-gray-500">
-                  {s?.wantsThali
-                    ? `${gravyOptions.find((o) => o.id === s.gravyPortionId)?.label ?? '—'} gravy · ${riceOptions.find((o) => o.id === s.ricePortionId)?.label ?? '—'} rice · ${s.rotiQuantity} roti`
-                    : 'No thali'}
+                  {s?.wantsThali ? 'Thali requested' : 'No thali'}
                 </p>
               </div>
             );
@@ -296,68 +246,45 @@ export function MultiDaySelector({
 
           // Open day
           return (
-            <div key={day.serviceDate} className="rounded-xl border border-gray-200 px-4 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-semibold">{dateLabel}</p>
-                  {day.menuItems.length > 0 && (
-                    <p className="mt-0.5 truncate text-sm text-gray-500">{day.menuItems.join(' · ')}</p>
-                  )}
-                </div>
-                <label className="flex shrink-0 cursor-pointer items-center gap-1.5 pt-0.5">
-                  <input
-                    type="checkbox"
-                    checked={!s.wantsThali}
-                    onChange={(e) => setDayField(day.serviceDate, 'wantsThali', !e.target.checked)}
-                    className="h-4 w-4 rounded accent-gray-700"
-                  />
-                  <span className="whitespace-nowrap text-sm text-gray-600">Skip</span>
-                </label>
+            <div key={day.serviceDate} className="rounded-xl border border-gray-200 px-4 py-4">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <p className="font-semibold">{dateLabel}</p>
               </div>
 
-              {s.wantsThali && (
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="text-xs text-gray-500">Gravy</label>
-                    <select
-                      value={s.gravyPortionId}
-                      onChange={(e) => setDayField(day.serviceDate, 'gravyPortionId', e.target.value)}
-                      className="mt-0.5 block w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-                    >
-                      {gravyOptions.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500">Rice</label>
-                    <select
-                      value={s.ricePortionId}
-                      onChange={(e) => setDayField(day.serviceDate, 'ricePortionId', e.target.value)}
-                      className="mt-0.5 block w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-                    >
-                      {riceOptions.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500">
-                      Roti ({rotiMin}–{rotiMax})
-                    </label>
-                    <input
-                      type="number"
-                      min={rotiMin}
-                      max={rotiMax}
-                      value={s.rotiQuantity}
-                      onChange={(e) => setDayField(day.serviceDate, 'rotiQuantity', Number(e.target.value))}
-                      className="mt-0.5 block w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-                    />
-                  </div>
+              {/* "Not Required" toggle */}
+              <label className="mt-2 flex cursor-pointer items-center gap-2 border-b border-gray-100 pb-3 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={!s.wantsThali}
+                  onChange={(e) => setNotRequired(day.serviceDate, e.target.checked, day.menuItems)}
+                  className="h-4 w-4 rounded accent-gray-700"
+                />
+                If Thali Not Required — Tick Here
+              </label>
+
+              {/* Per-item quantity rows */}
+              {s.wantsThali && day.menuItems.length > 0 && (
+                <div className="mt-1 divide-y divide-gray-100">
+                  {day.menuItems.map((item) => (
+                    <div key={item} className="flex items-center justify-between py-2.5">
+                      <span className="text-sm font-medium">{item}</span>
+                      <div className="flex gap-4">
+                        {([0, 1, 2] as const).map((n) => (
+                          <label key={n} className="flex cursor-pointer items-center gap-1 text-sm">
+                            <input
+                              type="radio"
+                              name={`item-${day.serviceDate}-${item}`}
+                              checked={(s.itemQuantities[item] ?? 1) === n}
+                              onChange={() => setItemQuantity(day.serviceDate, item, n)}
+                              className="accent-blue-600"
+                            />
+                            {n}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
