@@ -88,3 +88,66 @@ export function addDays(dateStr: string, days: number): string {
   dt.setUTCDate(dt.getUTCDate() + days);
   return dt.toISOString().slice(0, 10);
 }
+
+/** All YYYY-MM-DD dates in [start, end] inclusive. */
+export function getDatesInRange(start: string, end: string): string[] {
+  const [sy, sm, sd] = start.split('-').map(Number);
+  const [ey, em, ed] = end.split('-').map(Number);
+  const startMs = Date.UTC(sy, sm - 1, sd);
+  const endMs = Date.UTC(ey, em - 1, ed);
+  const dates: string[] = [];
+  for (let ms = startMs; ms <= endMs; ms += 86400000) {
+    dates.push(new Date(ms).toISOString().slice(0, 10));
+  }
+  return dates;
+}
+
+export interface BiweeklyPeriod {
+  start: string;
+  end: string;
+  label: string;
+}
+
+/** Groups `approvedMenuDates` into 14-day biweekly periods anchored at the first date. */
+export function getBiweeklyPeriods(approvedMenuDates: string[]): BiweeklyPeriod[] {
+  if (approvedMenuDates.length === 0) return [];
+  const sorted = [...approvedMenuDates].sort();
+  const dateSet = new Set(sorted);
+  const [y, m, d] = sorted[0].split('-').map(Number);
+  const anchorMs = Date.UTC(y, m - 1, d);
+  const last = sorted[sorted.length - 1];
+  const periods: BiweeklyPeriod[] = [];
+  for (let offset = 0; ; offset++) {
+    const startMs = anchorMs + offset * 14 * 86400000;
+    const endMs = startMs + 13 * 86400000;
+    const start = new Date(startMs).toISOString().slice(0, 10);
+    const end = new Date(endMs).toISOString().slice(0, 10);
+    const hasMenus = getDatesInRange(start, end).some((dt) => dateSet.has(dt));
+    if (hasMenus) {
+      periods.push({ start, end, label: formatPeriodLabel(start, end) });
+    }
+    if (end >= last) break;
+  }
+  return periods;
+}
+
+function formatPeriodLabel(start: string, end: string): string {
+  const fmt = (d: string) => {
+    const [y, m, day] = d.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'UTC',
+    });
+  };
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
+/** Short weekday name (Mon, Tue, …) for a YYYY-MM-DD date. */
+export function getDayName(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', {
+    weekday: 'short',
+    timeZone: 'UTC',
+  });
+}

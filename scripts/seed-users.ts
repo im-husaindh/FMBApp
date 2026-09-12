@@ -12,7 +12,7 @@ if (!url || !serviceKey) {
 const supabase = createClient(url, serviceKey);
 
 // DEVELOPMENT ONLY. Never reuse this password or these accounts outside local dev.
-const DEV_PASSWORD = 'DevPass123!';
+const DEV_PASSWORD = '123456';
 
 type SeedUser = {
   email: string;
@@ -22,14 +22,15 @@ type SeedUser = {
 };
 
 const users: SeedUser[] = [
-  { email: 'superadmin@fmb.test', fullName: 'Asha Mehta', role: 'super_admin', userCode: 'SA001' },
-  { email: 'admin1@fmb.test', fullName: 'Ravi Shah', role: 'admin', userCode: 'AD001' },
-  { email: 'admin2@fmb.test', fullName: 'Neha Doshi', role: 'admin', userCode: 'AD002' },
-  ...Array.from({ length: 15 }, (_, i) => ({
-    email: `user${i + 1}@fmb.test`,
-    fullName: `Community Member ${i + 1}`,
+  { email: 'shkabbas@fmb.test', fullName: 'Shk Abbas Janab', role: 'super_admin', userCode: 'SA001' },
+  { email: 'admin1@fmb.test', fullName: 'FMB Admin 1', role: 'admin', userCode: 'AD001' },
+  { email: 'admin2@fmb.test', fullName: 'FMB Admin 2', role: 'admin', userCode: 'AD002' },
+  { email: 'husaindh@fmb.test', fullName: 'Husain Dh', role: 'user', userCode: 'US001' },
+  ...Array.from({ length: 14 }, (_, i) => ({
+    email: `user${i + 2}@fmb.test`,
+    fullName: `Community Member ${i + 2}`,
     role: 'user' as const,
-    userCode: `US${String(i + 1).padStart(3, '0')}`,
+    userCode: `US${String(i + 2).padStart(3, '0')}`,
   })),
 ];
 

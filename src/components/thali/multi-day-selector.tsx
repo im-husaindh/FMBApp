@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
+import type { BiweeklyPeriod } from '@/lib/time/cutoff';
 import type { MultiDayRequestItem } from '@/lib/validation/thali-request';
 
 export interface DayData {
   serviceDate: string;
+  dayName: string;
   menuItems: string[];
   locked: boolean;
+  isPast: boolean;
+  isHoliday: boolean;
   unavailable: boolean;
   unavailableReason: string | null;
   existing: {
@@ -18,12 +22,12 @@ export interface DayData {
 }
 
 export interface MultiDaySelectorProps {
-  days: DayData[];
+  periods: BiweeklyPeriod[];
+  periodDays: DayData[][];
   gravyOptions: { id: string; label: string }[];
   riceOptions: { id: string; label: string }[];
   rotiMin: number;
   rotiMax: number;
-  cutoffTime: string;
   action: (formData: FormData) => Promise<void>;
 }
 
@@ -38,7 +42,7 @@ function defaultState(
   existing: DayData['existing'],
   gravyOptions: { id: string }[],
   riceOptions: { id: string }[],
-  rotiMin: number
+  rotiMin: number,
 ): DayState {
   if (existing?.wantsThali) {
     return {
@@ -64,60 +68,98 @@ function defaultState(
   };
 }
 
+function applyServingPreset(
+  serving: 0 | 1 | 2,
+  gravyOptions: { id: string; label: string }[],
+  riceOptions: { id: string; label: string }[],
+  rotiMin: number,
+  rotiMax: number,
+  current: DayState,
+): DayState {
+  if (serving === 0) return { ...current, wantsThali: false };
+  const rotiMid = Math.round((rotiMin + rotiMax) / 2);
+  if (serving === 1) {
+    const gravy = gravyOptions.find((o) => o.label === 'Regular') ?? gravyOptions[0];
+    const rice = riceOptions.find((o) => o.label === 'Regular') ?? riceOptions[0];
+    return {
+      wantsThali: true,
+      gravyPortionId: gravy?.id ?? current.gravyPortionId,
+      ricePortionId: rice?.id ?? current.ricePortionId,
+      rotiQuantity: rotiMid,
+    };
+  }
+  const gravy = gravyOptions.find((o) => o.label === 'Large') ?? gravyOptions[gravyOptions.length - 1];
+  const rice = riceOptions.find((o) => o.label === 'Large') ?? riceOptions[riceOptions.length - 1];
+  return {
+    wantsThali: true,
+    gravyPortionId: gravy?.id ?? current.gravyPortionId,
+    ricePortionId: rice?.id ?? current.ricePortionId,
+    rotiQuantity: rotiMax,
+  };
+}
+
+function formatDateDisplay(serviceDate: string, dayName: string): string {
+  const [y, m, d] = serviceDate.split('-').map(Number);
+  const dayPart = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+  return `${dayName}, ${dayPart}`;
+}
+
 export function MultiDaySelector({
-  days,
+  periods,
+  periodDays,
   gravyOptions,
   riceOptions,
   rotiMin,
   rotiMax,
-  cutoffTime,
   action,
 }: MultiDaySelectorProps) {
+  const [selectedPeriod, setSelectedPeriod] = useState(0);
+  const [bulkServing, setBulkServing] = useState<0 | 1 | 2>(1);
   const [dayStates, setDayStates] = useState<Record<string, DayState>>(() => {
     const init: Record<string, DayState> = {};
-    for (const day of days) {
-      init[day.serviceDate] = defaultState(day.existing, gravyOptions, riceOptions, rotiMin);
+    for (const days of periodDays) {
+      for (const day of days) {
+        init[day.serviceDate] = defaultState(day.existing, gravyOptions, riceOptions, rotiMin);
+      }
     }
     return init;
   });
-
-  const [bulkGravy, setBulkGravy] = useState(gravyOptions[0]?.id ?? '');
-  const [bulkRice, setBulkRice] = useState(riceOptions[0]?.id ?? '');
-  const [bulkRoti, setBulkRoti] = useState(rotiMin);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [pending, setPending] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
 
-  const openDays = days.filter((d) => !d.locked && !d.unavailable);
+  const currentDays = periodDays[selectedPeriod] ?? [];
+  const openDays = currentDays.filter((d) => !d.locked && !d.isPast && !d.isHoliday && !d.unavailable);
 
-  function applyToAll() {
+  function applyBulkToAll() {
     setDayStates((prev) => {
       const next = { ...prev };
       for (const day of openDays) {
-        next[day.serviceDate] = {
-          ...next[day.serviceDate],
-          gravyPortionId: bulkGravy,
-          ricePortionId: bulkRice,
-          rotiQuantity: bulkRoti,
-        };
+        next[day.serviceDate] = applyServingPreset(
+          bulkServing,
+          gravyOptions,
+          riceOptions,
+          rotiMin,
+          rotiMax,
+          next[day.serviceDate],
+        );
       }
       return next;
     });
   }
 
-  function setDayField<K extends keyof DayState>(
-    serviceDate: string,
-    field: K,
-    value: DayState[K]
-  ) {
+  function setDayField<K extends keyof DayState>(serviceDate: string, field: K, value: DayState[K]) {
     setDayStates((prev) => ({
       ...prev,
       [serviceDate]: { ...prev[serviceDate], [field]: value },
     }));
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (openDays.length === 0) return;
     setPending(true);
     const payload: MultiDayRequestItem[] = openDays.map((day) => {
       const s = dayStates[day.serviceDate];
@@ -135,239 +177,207 @@ export function MultiDaySelector({
     setPending(false);
   }
 
-  if (days.length === 0) {
+  if (periods.length === 0) {
     return (
-      <p className="mt-6 text-lg text-gray-600">
-        No upcoming menus have been approved yet.
-      </p>
+      <p className="mt-6 text-gray-600">No upcoming menus have been approved yet.</p>
     );
   }
 
   return (
-    <div className="mt-6 space-y-6">
+    <div className="mt-4 space-y-4">
+      {/* Period selector */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Select period</label>
+        <select
+          value={selectedPeriod}
+          onChange={(e) => setSelectedPeriod(Number(e.target.value))}
+          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-base"
+        >
+          {periods.map((p, i) => (
+            <option key={p.start} value={i}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Bulk apply */}
       {openDays.length > 0 && (
-        <section className="rounded-xl border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold">Set for all open days</h2>
-          <div className="mt-3 space-y-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Gravy</label>
-              <select
-                value={bulkGravy}
-                onChange={(e) => setBulkGravy(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-base"
-              >
-                {gravyOptions.map((o) => (
-                  <option key={o.id} value={o.id}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Rice</label>
-              <select
-                value={bulkRice}
-                onChange={(e) => setBulkRice(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-base"
-              >
-                {riceOptions.map((o) => (
-                  <option key={o.id} value={o.id}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                Roti ({rotiMin}–{rotiMax})
+        <div className="rounded-xl border border-gray-200 p-4">
+          <p className="text-sm font-semibold text-gray-700">Mark for all below menus</p>
+          <div className="mt-2 flex gap-6">
+            {([0, 1, 2] as const).map((n) => (
+              <label key={n} className="flex cursor-pointer items-center gap-1.5">
+                <input
+                  type="radio"
+                  name="bulk-serving"
+                  checked={bulkServing === n}
+                  onChange={() => setBulkServing(n)}
+                  className="accent-blue-600"
+                />
+                <span className="text-sm">{n} Serving</span>
               </label>
-              <input
-                type="number"
-                min={rotiMin}
-                max={rotiMax}
-                value={bulkRoti}
-                onChange={(e) => setBulkRoti(Number(e.target.value))}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-base"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={applyToAll}
-              className="w-full rounded-lg bg-gray-800 px-4 py-3 text-base font-semibold text-white"
-            >
-              Apply to all open days
-            </button>
+            ))}
           </div>
-        </section>
+          <button
+            type="button"
+            onClick={applyBulkToAll}
+            className="mt-3 w-full rounded-lg bg-gray-800 px-4 py-2.5 text-sm font-semibold text-white"
+          >
+            Apply to all open days
+          </button>
+        </div>
       )}
 
-      {/* Per-day rows */}
-      <form ref={formRef} onSubmit={handleSubmit}>
-        <div className="space-y-3">
-          {days.map((day) => {
-            const s = dayStates[day.serviceDate];
-            const isExpanded = expanded[day.serviceDate] ?? false;
+      {/* Day tiles */}
+      <form onSubmit={handleSubmit} className="space-y-3">
+        {currentDays.map((day) => {
+          const s = dayStates[day.serviceDate];
+          const dateLabel = formatDateDisplay(day.serviceDate, day.dayName);
 
-            if (day.unavailable) {
-              return (
-                <fieldset
-                  key={day.serviceDate}
-                  className="rounded-xl border border-gray-200 p-4 opacity-60"
-                >
-                  <legend className="text-base font-semibold">{day.serviceDate}</legend>
-                  {day.menuItems.length > 0 && (
-                    <p className="mt-1 text-sm text-gray-500">{day.menuItems.join(' · ')}</p>
-                  )}
-                  <p className="mt-2 text-sm text-gray-500">
-                    {day.unavailableReason ?? 'Unavailable'}
-                  </p>
-                </fieldset>
-              );
-            }
-
-            if (day.locked) {
-              return (
-                <fieldset
-                  key={day.serviceDate}
-                  className="rounded-xl border border-gray-200 p-4 opacity-70"
-                >
-                  <legend className="flex items-center gap-2 text-base font-semibold">
-                    {day.serviceDate}
-                    <span
-                      className="rounded bg-gray-200 px-1.5 py-0.5 text-xs text-gray-600"
-                      aria-label="Selections closed"
-                    >
-                      Closed
-                    </span>
-                  </legend>
-                  {day.menuItems.length > 0 && (
-                    <p className="mt-1 text-sm text-gray-500">{day.menuItems.join(' · ')}</p>
-                  )}
-                  <p className="mt-2 text-sm text-gray-600">
-                    {s.wantsThali
-                      ? `Thali requested — cutoff was ${cutoffTime} two days before`
-                      : 'No thali'}
-                  </p>
-                </fieldset>
-              );
-            }
-
+          if (day.isHoliday) {
             return (
-              <fieldset
+              <div
                 key={day.serviceDate}
-                className="rounded-xl border border-gray-200 p-4"
+                className={`rounded-xl border border-dashed border-gray-200 px-4 py-3 ${day.isPast ? 'opacity-35' : 'opacity-55'}`}
               >
-                <legend className="text-base font-semibold">{day.serviceDate}</legend>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-500">{dateLabel}</span>
+                  <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
+                    Holiday
+                  </span>
+                </div>
+              </div>
+            );
+          }
+
+          if (day.unavailable) {
+            return (
+              <div key={day.serviceDate} className="rounded-xl border border-gray-200 px-4 py-3 opacity-60">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">{dateLabel}</span>
+                  <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
+                    Unavailable
+                  </span>
+                </div>
                 {day.menuItems.length > 0 && (
                   <p className="mt-1 text-sm text-gray-500">{day.menuItems.join(' · ')}</p>
                 )}
-                <div className="mt-3 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setDayField(day.serviceDate, 'wantsThali', true)}
-                    className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
-                      s.wantsThali
-                        ? 'border-blue-600 bg-blue-600 text-white'
-                        : 'border-gray-300 text-gray-700'
-                    }`}
-                  >
-                    Yes, Thali
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDayField(day.serviceDate, 'wantsThali', false)}
-                    className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
-                      !s.wantsThali
-                        ? 'border-gray-800 bg-gray-800 text-white'
-                        : 'border-gray-300 text-gray-700'
-                    }`}
-                  >
-                    No Thali
-                  </button>
-                </div>
-
-                {s.wantsThali && (
-                  <div className="mt-3">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setExpanded((prev) => ({
-                          ...prev,
-                          [day.serviceDate]: !prev[day.serviceDate],
-                        }))
-                      }
-                      className="text-sm text-blue-600 underline"
-                    >
-                      {isExpanded ? 'Hide portions' : 'Customise portions'}
-                    </button>
-
-                    {!isExpanded && (
-                      <p className="mt-1 text-sm text-gray-600">
-                        {gravyOptions.find((o) => o.id === s.gravyPortionId)?.label ?? '—'} gravy ·{' '}
-                        {riceOptions.find((o) => o.id === s.ricePortionId)?.label ?? '—'} rice ·{' '}
-                        {s.rotiQuantity} roti
-                      </p>
-                    )}
-
-                    {isExpanded && (
-                      <div className="mt-2 space-y-2">
-                        <div>
-                          <label className="text-sm font-medium text-gray-700">Gravy</label>
-                          <select
-                            value={s.gravyPortionId}
-                            onChange={(e) =>
-                              setDayField(day.serviceDate, 'gravyPortionId', e.target.value)
-                            }
-                            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-base"
-                          >
-                            {gravyOptions.map((o) => (
-                              <option key={o.id} value={o.id}>{o.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-700">Rice</label>
-                          <select
-                            value={s.ricePortionId}
-                            onChange={(e) =>
-                              setDayField(day.serviceDate, 'ricePortionId', e.target.value)
-                            }
-                            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-base"
-                          >
-                            {riceOptions.map((o) => (
-                              <option key={o.id} value={o.id}>{o.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-700">
-                            Roti ({rotiMin}–{rotiMax})
-                          </label>
-                          <input
-                            type="number"
-                            min={rotiMin}
-                            max={rotiMax}
-                            value={s.rotiQuantity}
-                            onChange={(e) =>
-                              setDayField(day.serviceDate, 'rotiQuantity', Number(e.target.value))
-                            }
-                            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-base"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                {day.unavailableReason && (
+                  <p className="mt-0.5 text-xs text-gray-400">{day.unavailableReason}</p>
                 )}
-              </fieldset>
+              </div>
             );
-          })}
-        </div>
+          }
+
+          if (day.isPast || day.locked) {
+            return (
+              <div
+                key={day.serviceDate}
+                className={`rounded-xl border border-gray-200 px-4 py-3 ${day.isPast ? 'opacity-40' : 'opacity-70'}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">{dateLabel}</span>
+                  <span className="rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                    Closed
+                  </span>
+                </div>
+                {day.menuItems.length > 0 && (
+                  <p className="mt-1 text-sm text-gray-500">{day.menuItems.join(' · ')}</p>
+                )}
+                <p className="mt-1 text-sm text-gray-500">
+                  {s?.wantsThali
+                    ? `${gravyOptions.find((o) => o.id === s.gravyPortionId)?.label ?? '—'} gravy · ${riceOptions.find((o) => o.id === s.ricePortionId)?.label ?? '—'} rice · ${s.rotiQuantity} roti`
+                    : 'No thali'}
+                </p>
+              </div>
+            );
+          }
+
+          // Open day
+          return (
+            <div key={day.serviceDate} className="rounded-xl border border-gray-200 px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold">{dateLabel}</p>
+                  {day.menuItems.length > 0 && (
+                    <p className="mt-0.5 truncate text-sm text-gray-500">{day.menuItems.join(' · ')}</p>
+                  )}
+                </div>
+                <label className="flex shrink-0 cursor-pointer items-center gap-1.5 pt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={!s.wantsThali}
+                    onChange={(e) => setDayField(day.serviceDate, 'wantsThali', !e.target.checked)}
+                    className="h-4 w-4 rounded accent-gray-700"
+                  />
+                  <span className="whitespace-nowrap text-sm text-gray-600">Skip</span>
+                </label>
+              </div>
+
+              {s.wantsThali && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-xs text-gray-500">Gravy</label>
+                    <select
+                      value={s.gravyPortionId}
+                      onChange={(e) => setDayField(day.serviceDate, 'gravyPortionId', e.target.value)}
+                      className="mt-0.5 block w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+                    >
+                      {gravyOptions.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Rice</label>
+                    <select
+                      value={s.ricePortionId}
+                      onChange={(e) => setDayField(day.serviceDate, 'ricePortionId', e.target.value)}
+                      className="mt-0.5 block w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+                    >
+                      {riceOptions.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">
+                      Roti ({rotiMin}–{rotiMax})
+                    </label>
+                    <input
+                      type="number"
+                      min={rotiMin}
+                      max={rotiMax}
+                      value={s.rotiQuantity}
+                      onChange={(e) => setDayField(day.serviceDate, 'rotiQuantity', Number(e.target.value))}
+                      className="mt-0.5 block w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {openDays.length > 0 && (
           <button
             type="submit"
             disabled={pending}
-            className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-4 text-xl font-semibold text-white disabled:opacity-50"
+            className="w-full rounded-xl bg-blue-600 px-4 py-4 text-lg font-semibold text-white disabled:opacity-50"
           >
             {pending ? 'Saving…' : 'Save All'}
           </button>
+        )}
+
+        {openDays.length === 0 && currentDays.length > 0 && (
+          <p className="text-center text-sm text-gray-500">
+            All days in this period are closed or unavailable.
+          </p>
         )}
       </form>
     </div>

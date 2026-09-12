@@ -2,7 +2,7 @@ insert into public.app_settings (key, value) values
   ('app_name', '"FMBRequestThali"'),
   ('org_name', '"FMB Community"'),
   ('timezone', '"Asia/Kolkata"'),
-  ('cutoff_time', '"18:00"'),
+  ('cutoff_time', '"23:30"'),
   ('roti_min_qty', '0'),
   ('roti_max_qty', '6')
 on conflict (key) do nothing;
