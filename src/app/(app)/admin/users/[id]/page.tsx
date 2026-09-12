@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
@@ -30,6 +31,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
 
   const errorState = (
     <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
       <Link href="/admin/users/search" className="text-lg text-blue-600 underline">
         ← Back to Search
       </Link>
@@ -83,6 +85,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
       <Link href="/admin/users/search" className="text-lg text-blue-600 underline">
         ← Back to Search
       </Link>

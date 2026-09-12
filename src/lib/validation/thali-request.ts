@@ -38,3 +38,24 @@ export function thaliRequestSchema(rotiMin: number, rotiMax: number) {
 }
 
 export type ThaliRequestInput = z.infer<ReturnType<typeof thaliRequestSchema>>;
+
+const itemQuantitiesSchema = z.record(
+  z.string(),
+  z.union([z.literal(0), z.literal(1), z.literal(2)]),
+);
+
+const singleDayItemSchema = z.object({
+  serviceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  wantsThali: z.boolean(),
+  itemQuantities: itemQuantitiesSchema,
+});
+
+export function multiDayRequestSchema() {
+  return z.array(singleDayItemSchema).min(1);
+}
+
+export type MultiDayRequestItem = {
+  serviceDate: string;
+  wantsThali: boolean;
+  itemQuantities: Record<string, 0 | 1 | 2>;
+};

@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ export default async function ResetPasswordPage({
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-white px-4">
+      <BackButton />
       <div className="w-full max-w-sm space-y-6">
         <h1 className="text-center text-2xl font-bold">Set a New Password</h1>
 

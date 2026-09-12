@@ -1,10 +1,16 @@
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSettings, SETTINGS_KEYS } from '@/lib/settings';
-import { isBeforeCutoff, todayInTimezone, serviceDateRange, addDays } from '@/lib/time/cutoff';
-import { submitThaliRequestAction } from './actions';
-import { ThaliRequestCard, type ExistingRequest } from '@/components/thali/thali-request-card';
-import { MenuCalendar, type CalendarDay } from '@/components/thali/menu-calendar';
+import {
+  isBeforeCutoff,
+  todayInTimezone,
+  addDays,
+  getBiweeklyPeriods,
+  getDatesInRange,
+  getDayName,
+} from '@/lib/time/cutoff';
+import { submitMultiDayRequestsAction } from './actions';
+import { MultiDaySelector, type DayData } from '@/components/thali/multi-day-selector';
 
 export default async function DashboardPage({
   searchParams,
@@ -18,153 +24,195 @@ export default async function DashboardPage({
   const settings = await getSettings(supabase, [
     SETTINGS_KEYS.CUTOFF_TIME,
     SETTINGS_KEYS.TIMEZONE,
-    SETTINGS_KEYS.ROTI_MIN_QTY,
-    SETTINGS_KEYS.ROTI_MAX_QTY,
   ]);
   const cutoffTime = (settings[SETTINGS_KEYS.CUTOFF_TIME] as string) ?? '23:30';
-  const cutoffTimeDisplay = new Date(`1970-01-01T${cutoffTime}`).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
   const timezone = (settings[SETTINGS_KEYS.TIMEZONE] as string) ?? 'Asia/Kolkata';
-  const rotiMin = (settings[SETTINGS_KEYS.ROTI_MIN_QTY] as number) ?? 0;
-  const rotiMax = (settings[SETTINGS_KEYS.ROTI_MAX_QTY] as number) ?? 6;
 
   const today = todayInTimezone(timezone);
-  const tomorrow = addDays(today, 1);
-  const cutoffPassed = !isBeforeCutoff(tomorrow, timezone, cutoffTime);
+  const windowEnd = addDays(today, 60);
 
-  const dates = serviceDateRange(timezone, 3, 7);
-
+  // All approved menus in the next 60 days
   const { data: menus } = await supabase
     .from('menus')
     .select('id, service_date, current_approved_version_id')
-    .in('service_date', dates);
+    .not('current_approved_version_id', 'is', null)
+    .gte('service_date', today)
+    .lte('service_date', windowEnd)
+    .order('service_date', { ascending: true });
 
-  const approvedVersionIds = (menus ?? [])
+  const approvedMenus = menus ?? [];
+  const approvedMenuDates = approvedMenus.map((m) => m.service_date);
+
+  // Compute biweekly periods from available approved menu dates
+  const periods = getBiweeklyPeriods(approvedMenuDates);
+
+  if (periods.length === 0) {
+    const errorMessage =
+      errorParam === 'cutoff_passed'
+        ? 'One or more selections could not be saved — the cutoff has passed.'
+        : errorParam === 'invalid'
+          ? 'Your selection was not saved. Please try again.'
+          : errorParam === 'unavailable'
+            ? 'One or more dates are unavailable (leave or no-service day).'
+            : errorParam === 'save_failed'
+              ? 'Could not save your selection. Please try again.'
+              : null;
+
+    return (
+      <main className="mx-auto max-w-2xl px-4 py-10">
+        <h1 className="text-3xl font-bold">Good Morning, {profile.fullName}</h1>
+        {errorMessage && (
+          <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+            {errorMessage}
+          </p>
+        )}
+        <h2 className="mt-6 text-2xl font-bold">Upcoming Thali Requests</h2>
+        <p className="mt-6 text-gray-600">No upcoming menus have been approved yet.</p>
+      </main>
+    );
+  }
+
+  // All dates across all periods
+  const allPeriodDates = periods.flatMap((p) => getDatesInRange(p.start, p.end));
+  const firstDate = allPeriodDates[0];
+  const lastDate = allPeriodDates[allPeriodDates.length - 1];
+
+  // Menu items for each approved version
+  const approvedVersionIds = approvedMenus
     .map((m) => m.current_approved_version_id)
     .filter((id): id is string => !!id);
 
   const { data: versions } = approvedVersionIds.length
-    ? await supabase.from('menu_versions').select('id, menu_items(item_name, display_order)').in('id', approvedVersionIds)
-    : { data: [] as { id: string; menu_items: { item_name: string; display_order: number }[] }[] };
+    ? await supabase
+        .from('menu_versions')
+        .select('id, menu_items(item_name, category, display_order)')
+        .in('id', approvedVersionIds)
+    : {
+        data: [] as {
+          id: string;
+          menu_items: { item_name: string; category: string; display_order: number }[];
+        }[],
+      };
 
   const versionsById = new Map((versions ?? []).map((v) => [v.id, v]));
-  const calendarDays: CalendarDay[] = dates.map((serviceDate) => {
-    const menu = (menus ?? []).find((m) => m.service_date === serviceDate);
-    const version = menu?.current_approved_version_id ? versionsById.get(menu.current_approved_version_id) : undefined;
-    const items = (version?.menu_items ?? []).sort((a, b) => a.display_order - b.display_order).map((i) => i.item_name);
-    return { serviceDate, items };
-  });
+  const menusMap = new Map(approvedMenus.map((m) => [m.service_date, m]));
 
-  const tomorrowMenu = calendarDays.find((d) => d.serviceDate === tomorrow);
-
-  const { data: gravyOptions } = await supabase
-    .from('portion_options')
-    .select('id, label')
-    .eq('category', 'gravy')
-    .eq('active', true)
-    .order('sort_order');
-  const { data: riceOptions } = await supabase
-    .from('portion_options')
-    .select('id, label')
-    .eq('category', 'rice')
-    .eq('active', true)
-    .order('sort_order');
-
-  const { data: existing, error: existingError } = await supabase
+  // Existing thali requests for all period dates
+  const { data: existingRequests } = await supabase
     .from('thali_requests')
-    .select('wants_thali, gravy_portion_id, rice_portion_id, roti_quantity, updated_at')
-    .eq('service_date', tomorrow)
+    .select('service_date, wants_thali, item_quantities')
     .eq('user_id', profile.id)
-    .maybeSingle();
+    .in('service_date', allPeriodDates);
 
-  if (existingError) {
-    console.error('Failed to load existing thali request:', existingError);
+  const requestsByDate = new Map(
+    (existingRequests ?? []).map((r) => [r.service_date, r]),
+  );
+
+  // Leave and holiday rows for the full period range
+  const [{ data: leaveRows }, { data: holidayRows }] = await Promise.all([
+    supabase
+      .from('user_leaves')
+      .select('from_date, to_date, reason')
+      .eq('user_id', profile.id)
+      .lte('from_date', lastDate)
+      .gte('to_date', firstDate),
+    supabase
+      .from('service_holidays')
+      .select('service_date, reason')
+      .in('service_date', allPeriodDates),
+  ]);
+
+  const holidayReasonByDate = new Map(
+    (holidayRows ?? []).map((h) => [h.service_date, h.reason]),
+  );
+
+  function leaveReasonFor(serviceDate: string): string | null {
+    for (const leave of leaveRows ?? []) {
+      if (leave.from_date <= serviceDate && serviceDate <= leave.to_date) {
+        return leave.reason ?? 'On leave';
+      }
+    }
+    return null;
   }
 
-  let existingRequest: ExistingRequest = null;
-  if (existing) {
-    existingRequest = {
-      wantsThali: existing.wants_thali,
-      rotiQuantity: existing.roti_quantity,
-      gravyPortionId: existing.gravy_portion_id,
-      ricePortionId: existing.rice_portion_id,
-      gravyLabel: (gravyOptions ?? []).find((o) => o.id === existing.gravy_portion_id)?.label ?? null,
-      riceLabel: (riceOptions ?? []).find((o) => o.id === existing.rice_portion_id)?.label ?? null,
-      updatedAt: existing.updated_at,
-    };
-  }
+  // Build DayData[][] — one array of 14 days per period
+  const periodDays: DayData[][] = periods.map((period) => {
+    const dates = getDatesInRange(period.start, period.end);
+    return dates.map((serviceDate) => {
+      const menu = menusMap.get(serviceDate);
+      const isServiceHoliday = holidayReasonByDate.has(serviceDate);
+      const noMenu = !menu && !isServiceHoliday;
 
-  const { data: leaveRows } = await supabase
-    .from('user_leaves')
-    .select('reason')
-    .eq('user_id', profile.id)
-    .lte('from_date', tomorrow)
-    .gte('to_date', tomorrow);
-  const { data: holidayRows } = await supabase.from('service_holidays').select('reason').eq('service_date', tomorrow);
+      const menuItems = menu?.current_approved_version_id
+        ? (versionsById.get(menu.current_approved_version_id)?.menu_items ?? [])
+            .sort((a, b) => a.display_order - b.display_order)
+            .map((i) => ({ name: i.item_name, category: i.category }))
+        : [];
 
-  const onLeave = (leaveRows?.length ?? 0) > 0;
-  const isHoliday = (holidayRows?.length ?? 0) > 0;
+      const locked = !isBeforeCutoff(serviceDate, timezone, cutoffTime);
+      const isPast = serviceDate < today;
+      const dayName = getDayName(serviceDate);
+
+      const leaveReason = (isServiceHoliday || noMenu) ? null : leaveReasonFor(serviceDate);
+      const holidayReason = (isServiceHoliday || noMenu) ? null : (holidayReasonByDate.get(serviceDate) ?? null);
+      const unavailable = !isServiceHoliday && !noMenu && (leaveReason !== null || holidayReason !== null);
+      const unavailableReason =
+        leaveReason ?? (holidayReason ? `No service: ${holidayReason}` : null);
+
+      const req = requestsByDate.get(serviceDate) ?? null;
+      const existing = req
+        ? {
+            wantsThali: req.wants_thali,
+            itemQuantities: (req.item_quantities ?? {}) as Record<string, 0 | 1 | 2>,
+          }
+        : null;
+
+      return {
+        serviceDate,
+        dayName,
+        menuItems,
+        locked,
+        isPast,
+        isServiceHoliday,
+        noMenu,
+        unavailable,
+        unavailableReason,
+        existing,
+      };
+    });
+  });
 
   const errorMessage =
     errorParam === 'cutoff_passed'
-      ? 'Selection time has closed. Your previous saved selection has been kept.'
+      ? 'One or more selections could not be saved — the cutoff has passed.'
       : errorParam === 'invalid'
         ? 'Your selection was not saved. Please try again.'
         : errorParam === 'unavailable'
-          ? "You're on leave or thali service is unavailable for this date."
-          : null;
+          ? 'One or more dates are unavailable (leave or no-service day).'
+          : errorParam === 'save_failed'
+            ? 'Could not save your selection. Please try again.'
+            : null;
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="text-3xl font-bold">Good Morning, {profile.fullName}</h1>
 
       {errorMessage && (
-        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">
+          {errorMessage}
+        </p>
       )}
 
-      <h2 className="mt-6 text-2xl font-bold">Tomorrow&apos;s Thali</h2>
-      <p className="text-lg text-gray-600">{tomorrow}</p>
-      {tomorrowMenu && tomorrowMenu.items.length > 0 ? (
-        <div className="mt-2 space-y-1 text-lg">
-          {tomorrowMenu.items.map((item) => (
-            <p key={item}>{item}</p>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-2 text-lg text-gray-600">No menu has been published for this date yet.</p>
-      )}
+      <h2 className="mt-6 text-2xl font-bold">Thali Requests</h2>
+      <p className="text-sm text-gray-500">
+        Cutoff: {new Date(`1970-01-01T${cutoffTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}, two days before each service date.
+      </p>
 
-      <div className="mt-4">
-        {isHoliday ? (
-          <div className="rounded-xl border border-gray-200 p-6">
-            <p className="text-xl font-semibold">No Thali Service Tomorrow</p>
-            {holidayRows![0].reason && <p className="mt-2 text-lg text-gray-600">{holidayRows![0].reason}</p>}
-          </div>
-        ) : onLeave ? (
-          <div className="rounded-xl border border-gray-200 p-6">
-            <p className="text-xl font-semibold">You&apos;re on Leave Tomorrow</p>
-            {leaveRows![0].reason && <p className="mt-2 text-lg text-gray-600">{leaveRows![0].reason}</p>}
-          </div>
-        ) : (
-          <ThaliRequestCard
-            key={existingRequest?.updatedAt ?? 'none'}
-            serviceDate={tomorrow}
-            serviceDateLabel="tomorrow"
-            cutoffPassed={cutoffPassed}
-            existingRequest={existingRequest}
-            gravyOptions={gravyOptions ?? []}
-            riceOptions={riceOptions ?? []}
-            rotiMin={rotiMin}
-            rotiMax={rotiMax}
-            cutoffTime={cutoffTimeDisplay}
-            action={submitThaliRequestAction}
-          />
-        )}
-      </div>
-
-      <MenuCalendar days={calendarDays} todayDate={today} tomorrowDate={tomorrow} />
+      <MultiDaySelector
+        periods={periods}
+        periodDays={periodDays}
+        action={submitMultiDayRequestsAction}
+      />
     </main>
   );
 }

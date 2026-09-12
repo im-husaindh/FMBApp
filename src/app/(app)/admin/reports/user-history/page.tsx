@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -93,6 +94,7 @@ export default async function UserHistoryReportPage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
       <Link href="/admin/reports" className="text-lg text-blue-600 underline">
         ← Back to Reports
       </Link>

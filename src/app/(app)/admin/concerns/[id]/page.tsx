@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
@@ -56,6 +57,7 @@ export default async function AdminConcernDetailPage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
       <Link href="/admin/concerns" className="text-lg text-blue-600 underline">
         ← Back to Concerns
       </Link>

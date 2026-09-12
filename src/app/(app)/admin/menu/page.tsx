@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -16,6 +17,7 @@ export default async function AdminMenuListPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
+      <BackButton />
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Menus</h1>
         <Link href="/admin/menu/new" className="rounded-lg bg-blue-600 px-4 py-3 text-lg text-white">

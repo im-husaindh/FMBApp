@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -34,6 +35,7 @@ export default async function AuditLogPage({
 
   const errorState = (
     <main className="mx-auto max-w-4xl px-4 py-10">
+      <BackButton />
       <Link href="/super-admin" className="text-lg text-blue-600 underline">
         ← Back to Super Admin
       </Link>
@@ -69,6 +71,7 @@ export default async function AuditLogPage({
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
+      <BackButton />
       <Link href="/super-admin" className="text-lg text-blue-600 underline">
         ← Back to Super Admin
       </Link>

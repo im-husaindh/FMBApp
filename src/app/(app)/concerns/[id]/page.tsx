@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/back-button';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
@@ -37,6 +38,7 @@ export default async function ConcernDetailPage({ params }: { params: Promise<{ 
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
+      <BackButton />
       <Link href="/concerns" className="text-lg text-blue-600 underline">
         ← Back to Your Concerns
       </Link>
