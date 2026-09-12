@@ -54,7 +54,9 @@ export default async function DashboardPage({
           ? 'Your selection was not saved. Please try again.'
           : errorParam === 'unavailable'
             ? 'One or more dates are unavailable (leave or no-service day).'
-            : null;
+            : errorParam === 'save_failed'
+              ? 'Could not save your selection. Please try again.'
+              : null;
 
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
@@ -138,7 +140,8 @@ export default async function DashboardPage({
     const dates = getDatesInRange(period.start, period.end);
     return dates.map((serviceDate) => {
       const menu = menusMap.get(serviceDate);
-      const isHoliday = !menu;
+      const isServiceHoliday = holidayReasonByDate.has(serviceDate);
+      const noMenu = !menu && !isServiceHoliday;
 
       const menuItems = menu?.current_approved_version_id
         ? (versionsById.get(menu.current_approved_version_id)?.menu_items ?? [])
@@ -150,9 +153,9 @@ export default async function DashboardPage({
       const isPast = serviceDate < today;
       const dayName = getDayName(serviceDate);
 
-      const leaveReason = isHoliday ? null : leaveReasonFor(serviceDate);
-      const holidayReason = isHoliday ? null : (holidayReasonByDate.get(serviceDate) ?? null);
-      const unavailable = !isHoliday && (leaveReason !== null || holidayReason !== null);
+      const leaveReason = (isServiceHoliday || noMenu) ? null : leaveReasonFor(serviceDate);
+      const holidayReason = (isServiceHoliday || noMenu) ? null : (holidayReasonByDate.get(serviceDate) ?? null);
+      const unavailable = !isServiceHoliday && !noMenu && (leaveReason !== null || holidayReason !== null);
       const unavailableReason =
         leaveReason ?? (holidayReason ? `No service: ${holidayReason}` : null);
 
@@ -170,7 +173,8 @@ export default async function DashboardPage({
         menuItems,
         locked,
         isPast,
-        isHoliday,
+        isServiceHoliday,
+        noMenu,
         unavailable,
         unavailableReason,
         existing,
@@ -185,7 +189,9 @@ export default async function DashboardPage({
         ? 'Your selection was not saved. Please try again.'
         : errorParam === 'unavailable'
           ? 'One or more dates are unavailable (leave or no-service day).'
-          : null;
+          : errorParam === 'save_failed'
+            ? 'Could not save your selection. Please try again.'
+            : null;
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">

@@ -86,7 +86,8 @@ export async function submitMultiDayRequestsAction(formData: FormData) {
     .upsert(rows, { onConflict: 'user_id,service_date' });
 
   if (error) {
-    redirect('/dashboard?error=unavailable');
+    console.error('thali_requests upsert failed:', error.code, error.message, error.details);
+    redirect('/dashboard?error=save_failed');
   }
 
   redirect('/dashboard');

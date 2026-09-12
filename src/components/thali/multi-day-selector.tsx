@@ -21,7 +21,10 @@ export interface DayData {
   menuItems: { name: string; category: string }[];
   locked: boolean;
   isPast: boolean;
-  isHoliday: boolean;
+  /** Day is in the service_holidays table — an actual declared holiday */
+  isServiceHoliday: boolean;
+  /** No approved menu uploaded yet (but not a holiday) */
+  noMenu: boolean;
   unavailable: boolean;
   unavailableReason: string | null;
   existing: {
@@ -86,7 +89,7 @@ export function MultiDaySelector({ periods, periodDays, action }: MultiDaySelect
   const [pending, setPending] = useState(false);
 
   const currentDays = periodDays[selectedPeriod] ?? [];
-  const openDays = currentDays.filter((d) => !d.locked && !d.isPast && !d.isHoliday && !d.unavailable);
+  const openDays = currentDays.filter((d) => !d.locked && !d.isPast && !d.isServiceHoliday && !d.noMenu && !d.unavailable);
 
   function applyBulkToAll() {
     setDayStates((prev) => {
@@ -138,8 +141,11 @@ export function MultiDaySelector({ periods, periodDays, action }: MultiDaySelect
     });
     const fd = new FormData();
     fd.append('multiDayRequests', JSON.stringify(payload));
-    await action(fd);
-    setPending(false);
+    try {
+      await action(fd);
+    } finally {
+      setPending(false);
+    }
   }
 
   if (periods.length === 0) {
@@ -198,7 +204,7 @@ export function MultiDaySelector({ periods, periodDays, action }: MultiDaySelect
           const s = dayStates[day.serviceDate];
           const dateLabel = formatDateDisplay(day.serviceDate, day.dayName);
 
-          if (day.isHoliday) {
+          if (day.isServiceHoliday) {
             return (
               <div
                 key={day.serviceDate}
@@ -208,6 +214,22 @@ export function MultiDaySelector({ periods, periodDays, action }: MultiDaySelect
                   <span className="font-medium text-gray-500">{dateLabel}</span>
                   <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
                     Holiday
+                  </span>
+                </div>
+              </div>
+            );
+          }
+
+          if (day.noMenu) {
+            return (
+              <div
+                key={day.serviceDate}
+                className={`rounded-xl border border-dashed border-gray-200 px-4 py-3 ${day.isPast ? 'opacity-35' : 'opacity-55'}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-500">{dateLabel}</span>
+                  <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                    Yet to be decided
                   </span>
                 </div>
               </div>
