@@ -1,9 +1,8 @@
-import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSettings, SETTINGS_KEYS } from '@/lib/settings';
 import { isBeforeCutoff, todayInTimezone, serviceDateRange, addDays } from '@/lib/time/cutoff';
-import { submitThaliRequestAction, logoutAction } from './actions';
+import { submitThaliRequestAction } from './actions';
 import { ThaliRequestCard, type ExistingRequest } from '@/components/thali/thali-request-card';
 import { MenuCalendar, type CalendarDay } from '@/components/thali/menu-calendar';
 
@@ -22,7 +21,7 @@ export default async function DashboardPage({
     SETTINGS_KEYS.ROTI_MIN_QTY,
     SETTINGS_KEYS.ROTI_MAX_QTY,
   ]);
-  const cutoffTime = (settings[SETTINGS_KEYS.CUTOFF_TIME] as string) ?? '18:00';
+  const cutoffTime = (settings[SETTINGS_KEYS.CUTOFF_TIME] as string) ?? '23:30';
   const cutoffTimeDisplay = new Date(`1970-01-01T${cutoffTime}`).toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -119,20 +118,7 @@ export default async function DashboardPage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Good Morning, {profile.fullName}</h1>
-        <form action={logoutAction}>
-          <button type="submit" className="text-lg text-blue-600 underline">
-            Log Out
-          </button>
-        </form>
-      </div>
-
-      <div className="mt-3">
-        <Link href="/concerns" className="text-lg text-blue-600 underline">
-          Raise Food Concern
-        </Link>
-      </div>
+      <h1 className="text-3xl font-bold">Good Morning, {profile.fullName}</h1>
 
       {errorMessage && (
         <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-lg text-red-700">{errorMessage}</p>
