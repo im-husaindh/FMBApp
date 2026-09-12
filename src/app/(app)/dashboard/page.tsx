@@ -83,12 +83,12 @@ export default async function DashboardPage({
   const { data: versions } = approvedVersionIds.length
     ? await supabase
         .from('menu_versions')
-        .select('id, menu_items(item_name, display_order)')
+        .select('id, menu_items(item_name, category, display_order)')
         .in('id', approvedVersionIds)
     : {
         data: [] as {
           id: string;
-          menu_items: { item_name: string; display_order: number }[];
+          menu_items: { item_name: string; category: string; display_order: number }[];
         }[],
       };
 
@@ -143,7 +143,7 @@ export default async function DashboardPage({
       const menuItems = menu?.current_approved_version_id
         ? (versionsById.get(menu.current_approved_version_id)?.menu_items ?? [])
             .sort((a, b) => a.display_order - b.display_order)
-            .map((i) => i.item_name)
+            .map((i) => ({ name: i.item_name, category: i.category }))
         : [];
 
       const locked = !isBeforeCutoff(serviceDate, timezone, cutoffTime);

@@ -4,10 +4,21 @@ import { useState } from 'react';
 import type { BiweeklyPeriod } from '@/lib/time/cutoff';
 import type { MultiDayRequestItem } from '@/lib/validation/thali-request';
 
+const CATEGORY_ICON: Record<string, string> = {
+  gravy:     '🍲',
+  dal:       '🫕',
+  rice:      '🍚',
+  roti:      '🫓',
+  vegetable: '🥦',
+  salad:     '🥗',
+  sweet:     '🍮',
+  other:     '🍽️',
+};
+
 export interface DayData {
   serviceDate: string;
   dayName: string;
-  menuItems: string[];
+  menuItems: { name: string; category: string }[];
   locked: boolean;
   isPast: boolean;
   isHoliday: boolean;
@@ -30,23 +41,23 @@ type DayState = {
   itemQuantities: Record<string, 0 | 1 | 2>;
 };
 
-function defaultState(existing: DayData['existing'], menuItems: string[]): DayState {
+function defaultState(existing: DayData['existing'], menuItems: DayData['menuItems']): DayState {
   if (existing) {
     // Fill in any menu items missing from a previous save
     const quantities: Record<string, 0 | 1 | 2> = {};
     for (const item of menuItems) {
-      quantities[item] = (existing.itemQuantities[item] as 0 | 1 | 2 | undefined) ?? 1;
+      quantities[item.name] = (existing.itemQuantities[item.name] as 0 | 1 | 2 | undefined) ?? 1;
     }
     return { wantsThali: existing.wantsThali, itemQuantities: quantities };
   }
   const quantities: Record<string, 0 | 1 | 2> = {};
-  for (const item of menuItems) quantities[item] = 1;
+  for (const item of menuItems) quantities[item.name] = 1;
   return { wantsThali: true, itemQuantities: quantities };
 }
 
-function applyServingPreset(serving: 0 | 1 | 2, menuItems: string[]): DayState {
+function applyServingPreset(serving: 0 | 1 | 2, menuItems: DayData['menuItems']): DayState {
   const quantities: Record<string, 0 | 1 | 2> = {};
-  for (const item of menuItems) quantities[item] = serving;
+  for (const item of menuItems) quantities[item.name] = serving;
   return { wantsThali: serving > 0, itemQuantities: quantities };
 }
 
@@ -99,7 +110,7 @@ export function MultiDaySelector({ periods, periodDays, action }: MultiDaySelect
     });
   }
 
-  function setNotRequired(serviceDate: string, notRequired: boolean, menuItems: string[]) {
+  function setNotRequired(serviceDate: string, notRequired: boolean, menuItems: DayData['menuItems']) {
     if (notRequired) {
       setDayStates((prev) => ({
         ...prev,
@@ -213,7 +224,9 @@ export function MultiDaySelector({ periods, periodDays, action }: MultiDaySelect
                   </span>
                 </div>
                 {day.menuItems.length > 0 && (
-                  <p className="mt-1 text-sm text-gray-500">{day.menuItems.join(' · ')}</p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {day.menuItems.map((i) => `${CATEGORY_ICON[i.category] ?? '🍽️'} ${i.name}`).join(' · ')}
+                  </p>
                 )}
                 {day.unavailableReason && (
                   <p className="mt-0.5 text-xs text-gray-400">{day.unavailableReason}</p>
@@ -235,7 +248,9 @@ export function MultiDaySelector({ periods, periodDays, action }: MultiDaySelect
                   </span>
                 </div>
                 {day.menuItems.length > 0 && (
-                  <p className="mt-1 text-sm text-gray-500">{day.menuItems.join(' · ')}</p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {day.menuItems.map((i) => `${CATEGORY_ICON[i.category] ?? '🍽️'} ${i.name}`).join(' · ')}
+                  </p>
                 )}
                 <p className="mt-1 text-sm text-gray-500">
                   {s?.wantsThali ? 'Thali requested' : 'No thali'}
@@ -267,16 +282,18 @@ export function MultiDaySelector({ periods, periodDays, action }: MultiDaySelect
               {s.wantsThali && day.menuItems.length > 0 && (
                 <div className="mt-1 divide-y divide-gray-100">
                   {day.menuItems.map((item) => (
-                    <div key={item} className="flex items-center justify-between py-2.5">
-                      <span className="text-sm font-medium">{item}</span>
+                    <div key={item.name} className="flex items-center justify-between py-2.5">
+                      <span className="text-sm font-medium">
+                        {CATEGORY_ICON[item.category] ?? '🍽️'} {item.name}
+                      </span>
                       <div className="flex gap-4">
                         {([0, 1, 2] as const).map((n) => (
                           <label key={n} className="flex cursor-pointer items-center gap-1 text-sm">
                             <input
                               type="radio"
-                              name={`item-${day.serviceDate}-${item}`}
-                              checked={(s.itemQuantities[item] ?? 1) === n}
-                              onChange={() => setItemQuantity(day.serviceDate, item, n)}
+                              name={`item-${day.serviceDate}-${item.name}`}
+                              checked={(s.itemQuantities[item.name] ?? 1) === n}
+                              onChange={() => setItemQuantity(day.serviceDate, item.name, n)}
                               className="accent-blue-600"
                             />
                             {n}
