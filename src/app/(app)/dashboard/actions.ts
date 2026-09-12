@@ -5,13 +5,23 @@ import { requireRole } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSettings, SETTINGS_KEYS } from '@/lib/settings';
 import { isBeforeCutoff } from '@/lib/time/cutoff';
-import { thaliRequestSchema } from '@/lib/validation/thali-request';
+import { multiDayRequestSchema } from '@/lib/validation/thali-request';
 
-export async function submitThaliRequestAction(formData: FormData) {
+export async function submitMultiDayRequestsAction(formData: FormData) {
   const profile = await requireRole(['user', 'admin', 'super_admin']);
   const supabase = await createServerSupabaseClient();
 
-  const serviceDate = formData.get('serviceDate') as string;
+  const raw = formData.get('multiDayRequests');
+  if (typeof raw !== 'string') {
+    redirect('/dashboard?error=invalid');
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    redirect('/dashboard?error=invalid');
+  }
 
   const settings = await getSettings(supabase, [
     SETTINGS_KEYS.CUTOFF_TIME,
@@ -24,53 +34,60 @@ export async function submitThaliRequestAction(formData: FormData) {
   const rotiMin = (settings[SETTINGS_KEYS.ROTI_MIN_QTY] as number) ?? 0;
   const rotiMax = (settings[SETTINGS_KEYS.ROTI_MAX_QTY] as number) ?? 6;
 
-  const parsed = thaliRequestSchema(rotiMin, rotiMax).safeParse({
-    serviceDate,
-    wantsThali: formData.get('wantsThali'),
-    gravyPortionId: formData.get('gravyPortionId'),
-    ricePortionId: formData.get('ricePortionId'),
-    rotiQuantity: formData.get('rotiQuantity'),
-  });
-
-  if (!parsed.success) {
+  const result = multiDayRequestSchema(rotiMin, rotiMax).safeParse(parsed);
+  if (!result.success) {
     redirect('/dashboard?error=invalid');
   }
 
-  if (!isBeforeCutoff(serviceDate, timezone, cutoffTime)) {
-    redirect('/dashboard?error=cutoff_passed');
+  const items = result.data;
+
+  // Server-side cutoff guard
+  for (const item of items) {
+    if (!isBeforeCutoff(item.serviceDate, timezone, cutoffTime)) {
+      redirect('/dashboard?error=cutoff_passed');
+    }
   }
 
+  // Leave and holiday checks
+  const dates = items.map((i) => i.serviceDate);
   const [{ data: leaveRows }, { data: holidayRows }] = await Promise.all([
     supabase
       .from('user_leaves')
-      .select('id')
+      .select('from_date, to_date')
       .eq('user_id', profile.id)
-      .lte('from_date', serviceDate)
-      .gte('to_date', serviceDate),
-    supabase.from('service_holidays').select('id').eq('service_date', serviceDate),
+      .lte('from_date', dates[dates.length - 1])
+      .gte('to_date', dates[0]),
+    supabase.from('service_holidays').select('service_date').in('service_date', dates),
   ]);
 
-  if ((leaveRows?.length ?? 0) > 0 || (holidayRows?.length ?? 0) > 0) {
-    redirect('/dashboard?error=unavailable');
+  const holidayDates = new Set((holidayRows ?? []).map((h) => h.service_date));
+  for (const item of items) {
+    if (holidayDates.has(item.serviceDate)) {
+      redirect('/dashboard?error=unavailable');
+    }
+    for (const leave of leaveRows ?? []) {
+      if (leave.from_date <= item.serviceDate && item.serviceDate <= leave.to_date) {
+        redirect('/dashboard?error=unavailable');
+      }
+    }
   }
 
-  const { error } = await supabase.from('thali_requests').upsert(
-    {
-      user_id: profile.id,
-      service_date: parsed.data.serviceDate,
-      wants_thali: parsed.data.wantsThali,
-      gravy_portion_id: parsed.data.wantsThali ? parsed.data.gravyPortionId : null,
-      rice_portion_id: parsed.data.wantsThali ? parsed.data.ricePortionId : null,
-      roti_quantity: parsed.data.wantsThali ? parsed.data.rotiQuantity : null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id,service_date' }
-  );
+  // Bulk upsert
+  const rows = items.map((item) => ({
+    user_id: profile.id,
+    service_date: item.serviceDate,
+    wants_thali: item.wantsThali,
+    gravy_portion_id: item.gravyPortionId,
+    rice_portion_id: item.ricePortionId,
+    roti_quantity: item.rotiQuantity,
+    updated_at: new Date().toISOString(),
+  }));
+
+  const { error } = await supabase
+    .from('thali_requests')
+    .upsert(rows, { onConflict: 'user_id,service_date' });
 
   if (error) {
-    // The only realistic causes at this point (shape already validated, leave/holiday
-    // already checked above) are the RLS with-check's cutoff/leave/holiday conditions
-    // failing due to a race between page load and submit.
     redirect('/dashboard?error=unavailable');
   }
 

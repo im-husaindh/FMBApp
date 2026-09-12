@@ -36,9 +36,9 @@ export function zonedTimeToUtc(dateStr: string, timeStr: string, timeZone: strin
 /** The UTC instant at which the selection window for `serviceDate` closes. */
 export function cutoffInstant(serviceDate: string, timeZone: string, cutoffTime: string): Date {
   const [y, m, d] = serviceDate.split('-').map(Number);
-  const prevDay = new Date(Date.UTC(y, m - 1, d));
-  prevDay.setUTCDate(prevDay.getUTCDate() - 1);
-  const prevDateStr = prevDay.toISOString().slice(0, 10);
+  const twoDaysBefore = new Date(Date.UTC(y, m - 1, d));
+  twoDaysBefore.setUTCDate(twoDaysBefore.getUTCDate() - 2);
+  const prevDateStr = twoDaysBefore.toISOString().slice(0, 10);
   return zonedTimeToUtc(prevDateStr, cutoffTime, timeZone);
 }
 
